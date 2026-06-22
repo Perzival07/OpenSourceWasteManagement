@@ -72,21 +72,21 @@ DEMO_USERS: tuple[DemoUser, ...] = (
 
 
 def _load_app_bindings():
-    """Import the app's User model, password hasher, and session factory.
+    """Import the app's User model, password hasher, token issuer, and session factory.
 
-    Adjust the import paths here if your FastAPI project uses different
-    module names.
+    `create_access_token` should return a signed JWT whose payload includes
+    at least `sub` and `role` claims. Adjust paths to match your project.
     """
     try:
         from app.models.user import User  # type: ignore
-        from app.core.security import hash_password  # type: ignore
+        from app.core.security import hash_password, create_access_token  # type: ignore
         from app.db.session import SessionLocal  # type: ignore
-    except ImportError as exc:  # pragma: no cover - guidance for the dev
+    except ImportError as exc:  # pragma: no cover
         raise SystemExit(
             "Could not import app bindings. Edit _load_app_bindings() in "
             f"seed_demo_users.py to match your project layout. ({exc})"
         )
-    return User, hash_password, SessionLocal
+    return User, hash_password, create_access_token, SessionLocal
 
 
 def _upsert(session, User, hash_password: Callable[[str], str], user: DemoUser) -> str:
