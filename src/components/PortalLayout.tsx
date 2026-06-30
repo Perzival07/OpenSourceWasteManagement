@@ -151,7 +151,13 @@ export function PortalLayout({ role, items, brandLabel }: Props) {
                     <div className="text-sm font-semibold truncate">{user?.display_name || "Account"}</div>
                     <div className="text-xs text-muted-foreground truncate">{user?.email}</div>
                   </div>
-                  <button className="w-full text-left px-4 py-2 text-sm hover:bg-sand-100">
+                  <button
+                    onClick={() => {
+                      setMenuOpen(false);
+                      router.navigate({ to: `/${role}/settings` as any });
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm hover:bg-sand-100"
+                  >
                     Account settings
                   </button>
                   <button

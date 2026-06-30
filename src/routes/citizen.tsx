@@ -12,7 +12,6 @@ export const Route = createFileRoute("/citizen")({
 
 const items: NavItem[] = [
   { to: "/citizen", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/citizen/new", label: "New report", icon: Plus },
   { to: "/citizen/reports", label: "My reports", icon: FileText },
   { to: "/citizen/schedule", label: "Schedule", icon: Calendar },
   { to: "/citizen/notifications", label: "Notifications", icon: Bell },

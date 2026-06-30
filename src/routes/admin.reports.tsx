@@ -11,7 +11,7 @@ import { Button } from "@/components/portal/Button";
 import { Modal } from "@/components/portal/Modal";
 import { SelectField } from "@/components/portal/SelectField";
 import { useApi } from "@/hooks/useApi";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, API_URL } from "@/lib/api";
 import { classNames, formatDate } from "@/utils/helpers";
 
 export const Route = createFileRoute("/admin/reports")({
@@ -34,6 +34,7 @@ function ReportsManager() {
   const [assignFor, setAssignFor] = useState<any | null>(null);
   const [collectorId, setCollectorId] = useState("");
   const [busy, setBusy] = useState<string | number | null>(null);
+  const [viewPhoto, setViewPhoto] = useState<string | null>(null);
 
   const qs = useMemo(() => {
     const p = new URLSearchParams();
@@ -118,6 +119,7 @@ function ReportsManager() {
             <thead>
               <tr>
                 <Th>ID</Th>
+                <Th>Photo</Th>
                 <Th>Category</Th>
                 <Th>Priority</Th>
                 <Th>Address</Th>
@@ -134,6 +136,19 @@ function ReportsManager() {
                 return (
                   <tr key={r.id} className="hover:bg-sand-50">
                     <Td className="font-mono text-xs">#{String(r.id).slice(0, 6)}</Td>
+                    <Td>
+                      {r.photo_url ? (
+                        <button type="button" onClick={() => setViewPhoto(r.photo_url.startsWith('http') ? r.photo_url : `${API_URL}${r.photo_url}`)} className="block">
+                          <img
+                            src={r.photo_url.startsWith('http') ? r.photo_url : `${API_URL}${r.photo_url}`}
+                            alt="Report"
+                            className="w-10 h-10 object-cover rounded-md border border-border hover:opacity-80 transition-opacity"
+                          />
+                        </button>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </Td>
                     <Td>{r.category || r.tags?.[0] || "—"}</Td>
                     <Td><StatusBadge status={r.priority || "medium"} /></Td>
                     <Td className="max-w-[220px] truncate">{r.address || r.block || "—"}</Td>
@@ -222,6 +237,18 @@ function ReportsManager() {
               </option>
             ))}
           </SelectField>
+        </div>
+      </Modal>
+
+      <Modal
+        open={!!viewPhoto}
+        title="Report Photo"
+        onClose={() => setViewPhoto(null)}
+      >
+        <div className="flex justify-center p-4">
+          {viewPhoto && (
+            <img src={viewPhoto} alt="Enlarged Report" className="max-w-full max-h-[70vh] object-contain rounded-md" />
+          )}
         </div>
       </Modal>
     </>

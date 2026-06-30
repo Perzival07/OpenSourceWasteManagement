@@ -38,9 +38,7 @@ function MyReports() {
 
   return (
     <>
-      <PageHeader title="My reports" subtitle="Track everything you've reported.">
-        <Link to="/citizen/new"><Button>New report</Button></Link>
-      </PageHeader>
+      <PageHeader title="My reports" subtitle="Track everything you've reported." />
 
       <div className="flex flex-col md:flex-row gap-3 mb-4">
         <div className="relative flex-1 max-w-md">

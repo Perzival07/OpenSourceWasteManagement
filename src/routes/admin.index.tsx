@@ -29,7 +29,7 @@ function AdminDashboard() {
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           label="Reports (30d)"
-          value={analytics.loading ? "—" : summary.total ?? 0}
+          value={analytics.loading ? "—" : summary.total_reports ?? 0}
           icon={<FileText className="w-5 h-5" />}
         />
         <StatCard
@@ -40,7 +40,7 @@ function AdminDashboard() {
         />
         <StatCard
           label="Avg. resolution"
-          value={analytics.loading ? "—" : summary.avg_resolution ?? "—"}
+          value={analytics.loading ? "—" : summary.avg_resolution_hours ?? "—"}
           accent="yellow"
           icon={<Clock className="w-5 h-5" />}
         />

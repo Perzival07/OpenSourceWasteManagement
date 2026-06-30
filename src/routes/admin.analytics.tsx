@@ -56,9 +56,9 @@ function Analytics() {
       </PageHeader>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Total reports" value={loading ? "—" : summary.total ?? 0} icon={<BarChart3 className="w-5 h-5" />} />
+        <StatCard label="Total reports" value={loading ? "—" : summary.total_reports ?? 0} icon={<BarChart3 className="w-5 h-5" />} />
         <StatCard label="Resolved" value={loading ? "—" : summary.resolved ?? 0} icon={<CheckCircle2 className="w-5 h-5" />} accent="forest" />
-        <StatCard label="Avg. resolution" value={loading ? "—" : summary.avg_resolution ?? "—"} icon={<Clock className="w-5 h-5" />} accent="yellow" />
+        <StatCard label="Avg. resolution" value={loading ? "—" : summary.avg_resolution_hours ?? "—"} icon={<Clock className="w-5 h-5" />} accent="yellow" />
         <StatCard
           label="Resolution rate"
           value={loading ? "—" : summary.resolution_rate != null ? `${Math.round(summary.resolution_rate)}%` : "—"}
