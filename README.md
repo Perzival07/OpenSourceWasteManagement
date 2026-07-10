@@ -5,9 +5,7 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-green.svg)
 ![React](https://img.shields.io/badge/React-18.2-blue.svg)
 
-<p align="center">
-  <img src="assets/screenshots/LandingPage.png" alt="OpenSourceWasteManagement Landing Page" width="100%">
-</p>
+![OpenSourceWasteManagement Landing Page](./assets/screenshots/LandingPage.png)
 
 **OpenSourceWasteManagement** is an integrated platform designed to streamline urban management, civic engagement, and resource allocation. It bridges the gap between citizens and city administration by providing a robust ecosystem for incident reporting, task assignment, and AI-driven image analysis.
 
