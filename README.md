@@ -20,6 +20,20 @@
 
 ---
 
+## 🏗️ Architecture & Dataflow
+
+<p align="center">
+  <b>System Architecture</b><br>
+  <img src="./assets/architecture.png" alt="OpenSourceWasteManagement Architecture" width="800">
+</p>
+
+<p align="center">
+  <b>Incident Reporting Dataflow</b><br>
+  <img src="./assets/dataflow.png" alt="OpenSourceWasteManagement Dataflow" width="800">
+</p>
+
+---
+
 ## 📸 Screenshots
 
 ### 🛡️ Admin Dashboard
