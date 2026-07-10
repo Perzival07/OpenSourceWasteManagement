@@ -1,11 +1,11 @@
-# 🏙️ Smart City Reach
+# 🏙️ OpenSourceWasteManagement
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.9+-blue.svg)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-green.svg)
 ![React](https://img.shields.io/badge/React-18.2-blue.svg)
 
-**Smart City Reach** is an integrated platform designed to streamline urban management, civic engagement, and resource allocation. It bridges the gap between citizens and city administration by providing a robust ecosystem for incident reporting, task assignment, and AI-driven image analysis.
+**OpenSourceWasteManagement** is an integrated platform designed to streamline urban management, civic engagement, and resource allocation. It bridges the gap between citizens and city administration by providing a robust ecosystem for incident reporting, task assignment, and AI-driven image analysis.
 
 ---
 
@@ -127,7 +127,7 @@ python grounded_sam2_demo.py
 
 ## 🤝 Contributing
 
-Contributions are always welcome! Please open an issue or submit a Pull Request to help improve the Smart City Reach platform.
+Contributions are always welcome! Please open an issue or submit a Pull Request to help improve the OpenSourceWasteManagement platform.
 
 ## 📄 License
 

@@ -1,7 +1,7 @@
 # Project Structure
 
 ```
-smart-city-reach
+OpenSourceWasteManagement
 ├── .env
 ├── .gitignore
 ├── .prettierignore
