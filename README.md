@@ -5,6 +5,10 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-green.svg)
 ![React](https://img.shields.io/badge/React-18.2-blue.svg)
 
+<p align="center">
+  <img src="assets/screenshots/LandingPage.png" alt="OpenSourceWasteManagement Landing Page" width="100%">
+</p>
+
 **OpenSourceWasteManagement** is an integrated platform designed to streamline urban management, civic engagement, and resource allocation. It bridges the gap between citizens and city administration by providing a robust ecosystem for incident reporting, task assignment, and AI-driven image analysis.
 
 ---
@@ -25,18 +29,22 @@
 <summary><b>View Admin Interfaces</b> (Click to expand)</summary>
 <p align="center">
   <b>Operations Overview</b><br>
+  <i>A comprehensive dashboard displaying live city statistics, request intensity heatmaps, SLA alert triggers, and quick actions for dispatching optimization routes.</i><br>
   <img src="assets/screenshots/Admin1.png" alt="Admin Dashboard - Operations Overview" width="800">
 </p>
 <p align="center">
   <b>Full Analytics</b><br>
+  <i>Detailed analytical charts and reports for monitoring overall system performance, resolution rates, and collector efficiency over time.</i><br>
   <img src="assets/screenshots/Admin2.png" alt="Admin Dashboard - Full Analytics" width="800">
 </p>
 <p align="center">
   <b>User Management</b><br>
+  <i>A centralized panel for administrating system access, managing citizen and collector accounts, and overseeing role assignments.</i><br>
   <img src="assets/screenshots/Admin3.png" alt="Admin Dashboard - User Management" width="800">
 </p>
 <p align="center">
   <b>Settings & Configurations</b><br>
+  <i>System configuration interface for managing AI model parameters, database connections, and global platform preferences.</i><br>
   <img src="assets/screenshots/Admin4.png" alt="Admin Dashboard - Settings" width="800">
 </p>
 </details>
@@ -46,22 +54,27 @@
 <summary><b>View Citizen Interfaces</b> (Click to expand)</summary>
 <p align="center">
   <b>Dashboard & Recent Activity</b><br>
+  <i>A personalized citizen homepage showcasing recent incident reports, local community announcements, and quick access to essential services.</i><br>
   <img src="assets/screenshots/Citizen1.png" alt="Citizen Portal - Dashboard" width="800">
 </p>
 <p align="center">
   <b>New Report Form</b><br>
+  <i>An intuitive interface for citizens to report new issues, upload photos, and pinpoint incident locations on an interactive map.</i><br>
   <img src="assets/screenshots/Citizen2.png" alt="Citizen Portal - New Report" width="800">
 </p>
 <p align="center">
   <b>My Reports & Status</b><br>
+  <i>A transparent tracking system where citizens can view the real-time status and resolution progress of their submitted reports.</i><br>
   <img src="assets/screenshots/Citizen3.png" alt="Citizen Portal - My Reports" width="800">
 </p>
 <p align="center">
   <b>Collection Schedule</b><br>
+  <i>An easy-to-read calendar view displaying upcoming waste collection schedules and designated pickup zones for the citizen's ward.</i><br>
   <img src="assets/screenshots/Citizen4.png" alt="Citizen Portal - Schedule" width="800">
 </p>
 <p align="center">
   <b>Profile Settings</b><br>
+  <i>User profile management area where citizens can update their personal information, notification preferences, and account security.</i><br>
   <img src="assets/screenshots/Citizen5.png" alt="Citizen Portal - Profile Settings" width="800">
 </p>
 </details>
@@ -71,18 +84,22 @@
 <summary><b>View Collector Interfaces</b> (Click to expand)</summary>
 <p align="center">
   <b>Dashboard & Assigned Tasks</b><br>
+  <i>The dedicated mobile-friendly collector dashboard featuring current active tasks, daily progress, and priority assignments.</i><br>
   <img src="assets/screenshots/Collector1.png" alt="Collector View - Dashboard" width="800">
 </p>
 <p align="center">
   <b>Active Task Details</b><br>
+  <i>In-depth view of a specific task, providing collectors with precise location data, issue descriptions, and status update controls.</i><br>
   <img src="assets/screenshots/Collector2.png" alt="Collector View - Active Tasks" width="800">
 </p>
 <p align="center">
   <b>Live Routing Map</b><br>
+  <i>A geographic overview helping collectors navigate between incident locations efficiently using optimized routing algorithms.</i><br>
   <img src="assets/screenshots/Collector3.png" alt="Collector View - Map" width="800">
 </p>
 <p align="center">
   <b>Route Optimization</b><br>
+  <i>An AI-driven interactive route planner that dynamically adjusts pickup sequences to minimize travel time and maximize resource efficiency.</i><br>
   <img src="assets/screenshots/Collector4.png" alt="Collector View - Route Optimization" width="800">
 </p>
 </details>
