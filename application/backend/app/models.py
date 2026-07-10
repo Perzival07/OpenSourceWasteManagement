@@ -16,6 +16,12 @@ class ReportStatus(str, enum.Enum):
     resolved = "resolved"
     cancelled = "cancelled"
 
+class MLStatus(str, enum.Enum):
+    pending = "pending"
+    success = "success"
+    no_objects_found = "no_objects_found"
+    failed = "failed"
+
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
@@ -54,6 +60,10 @@ class Report(Base):
     completion_photo_url = Column(String, nullable=True)
     completion_latitude = Column(Float, nullable=True)
     completion_longitude = Column(Float, nullable=True)
+    annotated_photo_url = Column(String, nullable=True)
+    ml_status = Column(SQLEnum(MLStatus), default=MLStatus.pending, nullable=False)
+    detection_metadata = Column(JSON, nullable=True)
+    ml_retry_count = Column(Integer, default=0, nullable=False)
     submitted_at = Column(DateTime, default=datetime.utcnow)
     completed_at = Column(DateTime, nullable=True)
 

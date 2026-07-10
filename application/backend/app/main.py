@@ -18,6 +18,13 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="CleanCity API", version="1.0")
 
+@app.on_event("startup")
+def startup_event():
+    import threading
+    from .ml_service import init_models, run_resilient_queue_scheduler
+    threading.Thread(target=init_models, daemon=True).start()
+    threading.Thread(target=run_resilient_queue_scheduler, daemon=True).start()
+
 # Rate Limiting
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
@@ -51,23 +58,7 @@ def root(request: Request):
 
 # ---- WebSocket for real-time notifications ----
 from fastapi import WebSocket, WebSocketDisconnect
-
-class ConnectionManager:
-    def __init__(self):
-        self.active_connections: list[WebSocket] = []
-
-    async def connect(self, websocket: WebSocket):
-        await websocket.accept()
-        self.active_connections.append(websocket)
-
-    def disconnect(self, websocket: WebSocket):
-        self.active_connections.remove(websocket)
-
-    async def broadcast(self, message: str):
-        for connection in self.active_connections:
-            await connection.send_text(message)
-
-manager = ConnectionManager()
+from .websocket import manager
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):

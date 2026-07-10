@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query, Request, BackgroundTasks
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
 import logging
 import json
-# from ..main import manager  # Removed due to circular import
+from ..websocket import manager
 from .. import crud, schemas, auth, database, models
 from ..rate_limiter import limiter
 from ..utils.file_upload import upload_to_cloudinary
@@ -25,6 +25,7 @@ async def create_report(
     category: Optional[str] = Form(None),
     priority: Optional[str] = Form(None),
     photo: UploadFile = File(...),
+    background_tasks: BackgroundTasks = None,
     db: Session = Depends(database.get_db),
     current_user: schemas.UserOut = Depends(auth.get_current_user)
 ):
@@ -51,6 +52,12 @@ async def create_report(
         tags=tag_list
     )
     db_report = crud.create_report(db, report_data, photo_url)
+    
+    # Trigger background ML task if BackgroundTasks is provided
+    if background_tasks:
+        from ..ml_service import process_and_upload_image
+        background_tasks.add_task(process_and_upload_image, db_report.id, photo_url)
+        
     return db_report
 
 @router.get("/", response_model=schemas.PaginatedReports)
@@ -107,7 +114,7 @@ async def update_report(
         if report.assigned_worker_id != current_user.id:
             raise HTTPException(status_code=403, detail="Not assigned to this report")
         # Collectors can only update status and completion fields
-        allowed_fields = {"status", "completion_photo_url", "completion_latitude", "completion_longitude"}
+        allowed_fields = {"status", "completion_photo_url", "completion_latitude", "completion_longitude", "annotated_photo_url", "ml_status", "detection_metadata", "ml_retry_count"}
         update_dict = report_update.dict(exclude_unset=True)
         if not all(k in allowed_fields for k in update_dict.keys()):
             raise HTTPException(status_code=403, detail="Collectors can only update status and completion fields")
@@ -121,10 +128,11 @@ async def update_report(
 
     updated = crud.update_report(db, report_id, report_update)
     
-    # await manager.broadcast(json.dumps({
-    #     "event": "report:status_changed",
-    #     "id": report_id,
-    #     "new_status": updated.status
-    # }))
+    await manager.broadcast(json.dumps({
+        "event": "report:status_changed",
+        "id": updated.id,
+        "status": updated.status,
+        "address": updated.address
+    }))
     
     return updated

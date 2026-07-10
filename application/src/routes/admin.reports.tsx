@@ -137,17 +137,53 @@ function ReportsManager() {
                   <tr key={r.id} className="hover:bg-sand-50">
                     <Td className="font-mono text-xs">#{String(r.id).slice(0, 6)}</Td>
                     <Td>
-                      {r.photo_url ? (
-                        <button type="button" onClick={() => setViewPhoto(r.photo_url.startsWith('http') ? r.photo_url : `${API_URL}${r.photo_url}`)} className="block">
-                          <img
-                            src={r.photo_url.startsWith('http') ? r.photo_url : `${API_URL}${r.photo_url}`}
-                            alt="Report"
-                            className="w-10 h-10 object-cover rounded-md border border-border hover:opacity-80 transition-opacity"
-                          />
-                        </button>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">—</span>
-                      )}
+                      <div className="flex gap-2 items-center">
+                        {r.photo_url ? (
+                          <button type="button" onClick={() => setViewPhoto(r.photo_url.startsWith('http') ? r.photo_url : `${API_URL}${r.photo_url}`)} className="block relative group">
+                            <img
+                              src={r.photo_url.startsWith('http') ? r.photo_url : `${API_URL}${r.photo_url}`}
+                              alt="Report"
+                              className="w-10 h-10 object-cover rounded-md border border-border hover:opacity-80 transition-opacity"
+                            />
+                          </button>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                        {((r.ml_status === "success" && r.annotated_photo_url) || (r.annotated_photo_url && r.annotated_photo_url !== "NOT_FOUND")) && (
+                          <button
+                            type="button"
+                            onClick={() => setViewPhoto(r.annotated_photo_url.startsWith('http') ? r.annotated_photo_url : `${API_URL}${r.annotated_photo_url}`)}
+                            className="block relative group"
+                            title={
+                              r.detection_metadata?.counts 
+                                ? `Detected: ${Object.entries(r.detection_metadata.counts).map(([k, v]) => `${v}x ${k}`).join(', ')}`
+                                : "View annotated image"
+                            }
+                          >
+                            <img
+                              src={r.annotated_photo_url.startsWith('http') ? r.annotated_photo_url : `${API_URL}${r.annotated_photo_url}`}
+                              alt="Annotated Report"
+                              className="w-10 h-10 object-cover rounded-md border-2 border-forest-500 hover:opacity-80 transition-opacity"
+                            />
+                            <div className="absolute inset-0 border-2 border-forest-500 rounded-md pointer-events-none"></div>
+                          </button>
+                        )}
+                        {(r.ml_status === "no_objects_found" || r.annotated_photo_url === "NOT_FOUND") && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-sand-200 text-ink-950/70 border border-border">
+                            Not found
+                          </span>
+                        )}
+                        {r.ml_status === "failed" && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-100 text-red-800 border border-red-200">
+                            ML Failed
+                          </span>
+                        )}
+                        {r.ml_status === "pending" && !r.annotated_photo_url && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-100 animate-pulse">
+                            Analyzing...
+                          </span>
+                        )}
+                      </div>
                     </Td>
                     <Td>{r.category || r.tags?.[0] || "—"}</Td>
                     <Td><StatusBadge status={r.priority || "medium"} /></Td>

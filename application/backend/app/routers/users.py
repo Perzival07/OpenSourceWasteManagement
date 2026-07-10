@@ -16,6 +16,19 @@ def update_user_me(
 ):
     return crud.update_user(db, user_id=current_user.id, user_update=user_update)
 
+@router.post("/me/password")
+def change_password(
+    data: schemas.PasswordChange,
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(database.get_db)
+):
+    if not auth.verify_password(data.old_password, current_user.hashed_password):
+        raise HTTPException(status_code=400, detail="Incorrect current password")
+    
+    current_user.hashed_password = auth.get_password_hash(data.new_password)
+    db.commit()
+    return {"message": "Password changed successfully"}
+
 @router.get("", response_model=list[schemas.UserOut])
 def get_users(
     role: str | None = None,

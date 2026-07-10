@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import Optional
 import json
-# from ..main import manager  # Removed due to circular import
+from ..websocket import manager
 from .. import crud, schemas, auth, database, models
 from datetime import datetime
 
@@ -67,10 +67,11 @@ async def update_task_status(
     report_update = schemas.ReportUpdate(status=update.status, completed_at=update.completed_at if update.status == "resolved" else None)
     updated = crud.update_report(db, task_id, report_update)
     
-    # await manager.broadcast(json.dumps({
-    #     "event": "report:status_changed",
-    #     "id": task_id,
-    #     "new_status": updated.status
-    # }))
+    await manager.broadcast(json.dumps({
+        "event": "report:status_changed",
+        "id": updated.id,
+        "status": updated.status,
+        "address": updated.address
+    }))
     
     return updated

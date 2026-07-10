@@ -9,3 +9,11 @@ python-dotenv
 pydantic-settings
 slowapi
 cloudinary
+opencv-python
+torch
+torchvision
+supervision>=0.22.0
+alembic
+addict
+yapf
+timm

@@ -90,8 +90,13 @@ function AdminSettings() {
 
     setLoading(true);
     try {
-      // TODO: Replace with real endpoint when available
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await apiFetch("/users/me/password", {
+        method: "POST",
+        body: {
+          old_password: oldPassword,
+          new_password: newPassword,
+        },
+      });
       setPasswordSuccess(true);
       setOldPassword("");
       setNewPassword("");

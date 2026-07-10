@@ -66,6 +66,10 @@ class ReportUpdate(BaseModel):
     completion_photo_url: Optional[str] = None
     completion_latitude: Optional[float] = None
     completion_longitude: Optional[float] = None
+    annotated_photo_url: Optional[str] = None
+    ml_status: Optional[str] = None
+    detection_metadata: Optional[dict] = None
+    ml_retry_count: Optional[int] = None
     completed_at: Optional[datetime] = None
 
 class ReportOut(ReportBase):
@@ -80,6 +84,10 @@ class ReportOut(ReportBase):
     completion_photo_url: Optional[str] = None
     completion_latitude: Optional[float] = None
     completion_longitude: Optional[float] = None
+    annotated_photo_url: Optional[str] = None
+    ml_status: str
+    detection_metadata: Optional[dict] = None
+    ml_retry_count: int = 0
     completed_at: Optional[datetime] = None
     class Config:
         from_attributes = True
@@ -146,3 +154,8 @@ class TokenResponse(BaseModel):
 # ---- Collector ----
 class TaskUpdate(BaseModel):
     status: str
+
+# ---- Password Change ----
+class PasswordChange(BaseModel):
+    old_password: str
+    new_password: str
