@@ -70,11 +70,7 @@
   <i>An easy-to-read calendar view displaying upcoming waste collection schedules and designated pickup zones for the citizen's ward.</i><br>
   <img src="assets/screenshots/Citizen4.png" alt="Citizen Portal - Schedule" width="800">
 </p>
-<p align="center">
-  <b>Profile Settings</b><br>
-  <i>User profile management area where citizens can update their personal information, notification preferences, and account security.</i><br>
-  <img src="assets/screenshots/Citizen5.png" alt="Citizen Portal - Profile Settings" width="800">
-</p>
+
 </details>
 
 ### 🚛 Collector View
