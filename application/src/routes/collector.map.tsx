@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { MapPin, Navigation, Map as MapIcon } from "lucide-react";
 import { PageHeader } from "@/components/portal/PageHeader";
 import { Card } from "@/components/portal/Card";
@@ -9,6 +9,8 @@ import { EmptyState } from "@/components/portal/EmptyState";
 import { StatusBadge } from "@/components/portal/StatusBadge";
 import { useApi } from "@/hooks/useApi";
 import { classNames } from "@/utils/helpers";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 
 export const Route = createFileRoute("/collector/map")({
   component: TaskMap,
@@ -27,30 +29,78 @@ interface Task {
 function TaskMap() {
   const { data, loading, error } = useApi<any>("/collector/tasks?limit=50", {}, []);
   const items: Task[] = Array.isArray(data) ? data : data?.items ?? [];
-  const mapped = items.filter((t) => t.latitude != null && t.longitude != null);
+  const mapped = useMemo(() => items.filter((t) => t.latitude != null && t.longitude != null), [items]);
   const [selected, setSelected] = useState<Task | null>(null);
 
-  const bounds = useMemo(() => {
-    if (mapped.length === 0) return null;
-    const lats = mapped.map((t) => Number(t.latitude));
-    const lngs = mapped.map((t) => Number(t.longitude));
-    return {
-      minLat: Math.min(...lats),
-      maxLat: Math.max(...lats),
-      minLng: Math.min(...lngs),
-      maxLng: Math.max(...lngs),
+  const mapRef = useRef<HTMLDivElement>(null);
+  const leafletMap = useRef<L.Map | null>(null);
+  const markersRef = useRef<Record<string | number, L.Marker>>({});
+
+  // Initialize Leaflet Map
+  useEffect(() => {
+    if (!mapRef.current || mapped.length === 0) return;
+
+    // Fix default Leaflet icon paths in Vite/React
+    delete (L.Icon.Default.prototype as any)._getIconUrl;
+    L.Icon.Default.mergeOptions({
+      iconRetinaUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png",
+      iconUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png",
+      shadowUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png",
+    });
+
+    const map = L.map(mapRef.current);
+    leafletMap.current = map;
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    const markers: Record<string | number, L.Marker> = {};
+    const latLngs: [number, number][] = [];
+
+    mapped.forEach((t) => {
+      const lat = Number(t.latitude);
+      const lng = Number(t.longitude);
+      if (isNaN(lat) || isNaN(lng)) return;
+
+      latLngs.push([lat, lng]);
+
+      const marker = L.marker([lat, lng]).addTo(map);
+      marker.bindPopup(`<b>${t.category || t.tags?.[0] || "Task"}</b><br/>${t.address || "Address unavailable"}`);
+      marker.on("click", () => {
+        setSelected(t);
+      });
+      markers[t.id] = marker;
+    });
+
+    markersRef.current = markers;
+
+    if (latLngs.length > 0) {
+      map.fitBounds(latLngs, { padding: [50, 50] });
+    } else {
+      map.setView([12.9716, 77.5946], 13);
+    }
+
+    return () => {
+      map.remove();
+      leafletMap.current = null;
+      markersRef.current = {};
     };
   }, [mapped]);
 
-  const project = (t: Task) => {
-    if (!bounds) return { x: 50, y: 50 };
-    const { minLat, maxLat, minLng, maxLng } = bounds;
-    const w = maxLng - minLng || 1;
-    const h = maxLat - minLat || 1;
-    const x = ((Number(t.longitude) - minLng) / w) * 90 + 5;
-    const y = 95 - ((Number(t.latitude) - minLat) / h) * 90;
-    return { x, y };
-  };
+  // Sync map view if selection changes
+  useEffect(() => {
+    if (!leafletMap.current || !selected) return;
+    const lat = Number(selected.latitude);
+    const lng = Number(selected.longitude);
+    if (!isNaN(lat) && !isNaN(lng)) {
+      leafletMap.current.setView([lat, lng], 15);
+      const marker = markersRef.current[selected.id];
+      if (marker) {
+        marker.openPopup();
+      }
+    }
+  }, [selected]);
 
   const navigateTo = (t: Task) => {
     const url = `https://www.google.com/maps/dir/?api=1&destination=${t.latitude},${t.longitude}`;
@@ -73,45 +123,10 @@ function TaskMap() {
         />
       ) : (
         <div className="grid lg:grid-cols-3 gap-4">
-          {/* Map canvas placeholder */}
-          <Card className="lg:col-span-2 relative overflow-hidden h-[520px] bg-gradient-to-br from-forest-50 to-sand-100">
-            <div className="absolute inset-0 bg-noise opacity-40 pointer-events-none" />
-            <div
-              className="absolute inset-0"
-              style={{
-                backgroundImage:
-                  "linear-gradient(to right, rgba(10,15,10,0.06) 1px, transparent 1px), linear-gradient(to bottom, rgba(10,15,10,0.06) 1px, transparent 1px)",
-                backgroundSize: "40px 40px",
-              }}
-            />
-            {mapped.map((t) => {
-              const { x, y } = project(t);
-              const active = selected?.id === t.id;
-              return (
-                <button
-                  key={t.id}
-                  onClick={() => setSelected(t)}
-                  className={classNames(
-                    "absolute -translate-x-1/2 -translate-y-full transition-transform",
-                    active ? "scale-125 z-10" : "hover:scale-110"
-                  )}
-                  style={{ left: `${x}%`, top: `${y}%` }}
-                  aria-label={`Task #${t.id}`}
-                >
-                  <div className={classNames(
-                    "w-6 h-6 rounded-full border-2 border-ink-950 grid place-items-center shadow-md",
-                    active ? "bg-forest-500" : "bg-sand-50"
-                  )}>
-                    <MapPin className="w-3.5 h-3.5 text-ink-950" />
-                  </div>
-                  <div className={classNames(
-                    "w-1 h-2 mx-auto",
-                    active ? "bg-forest-500" : "bg-ink-950"
-                  )} />
-                </button>
-              );
-            })}
-            <div className="absolute bottom-3 left-3 bg-card/90 backdrop-blur border border-border rounded-lg px-3 py-2 text-xs font-mono">
+          {/* Leaflet Map Card */}
+          <Card className="lg:col-span-2 relative overflow-hidden h-[520px]">
+            <div ref={mapRef} className="absolute inset-0 w-full h-full z-0" />
+            <div className="absolute bottom-3 left-3 bg-card/90 backdrop-blur border border-border rounded-lg px-3 py-2 text-xs font-mono z-[1000] pointer-events-none">
               {mapped.length} task{mapped.length === 1 ? "" : "s"} plotted
             </div>
           </Card>
