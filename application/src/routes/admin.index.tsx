@@ -259,7 +259,13 @@ function AdminDashboard() {
         />
         <StatCard
           label="Avg. resolution"
-          value={analytics.loading ? "—" : summary.avg_resolution_hours ?? "—"}
+          value={
+            analytics.loading
+              ? "—"
+              : summary.avg_resolution_hours != null
+              ? `${Number(summary.avg_resolution_hours).toFixed(1)}h`
+              : "—"
+          }
           accent="yellow"
           icon={<Clock className="w-5 h-5" />}
         />

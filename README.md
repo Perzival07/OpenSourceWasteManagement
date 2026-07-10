@@ -20,19 +20,71 @@
 
 ## 📸 Screenshots
 
+### 🛡️ Admin Dashboard
 <details>
-<summary><b>Admin Dashboard</b> (Click to expand)</summary>
-<img src="assets/screenshots/admin_1_Dashboard.png" alt="Admin Dashboard" width="800">
+<summary><b>View Admin Interfaces</b> (Click to expand)</summary>
+<p align="center">
+  <b>Operations Overview</b><br>
+  <img src="assets/screenshots/Admin1.png" alt="Admin Dashboard - Operations Overview" width="800">
+</p>
+<p align="center">
+  <b>Full Analytics</b><br>
+  <img src="assets/screenshots/Admin2.png" alt="Admin Dashboard - Full Analytics" width="800">
+</p>
+<p align="center">
+  <b>User Management</b><br>
+  <img src="assets/screenshots/Admin3.png" alt="Admin Dashboard - User Management" width="800">
+</p>
+<p align="center">
+  <b>Settings & Configurations</b><br>
+  <img src="assets/screenshots/Admin4.png" alt="Admin Dashboard - Settings" width="800">
+</p>
 </details>
 
+### 👤 Citizen Portal
 <details>
-<summary><b>Citizen Portal</b> (Click to expand)</summary>
-<img src="assets/screenshots/citizen_1_Dashboard.png" alt="Citizen Dashboard" width="800">
+<summary><b>View Citizen Interfaces</b> (Click to expand)</summary>
+<p align="center">
+  <b>Dashboard & Recent Activity</b><br>
+  <img src="assets/screenshots/Citizen1.png" alt="Citizen Portal - Dashboard" width="800">
+</p>
+<p align="center">
+  <b>New Report Form</b><br>
+  <img src="assets/screenshots/Citizen2.png" alt="Citizen Portal - New Report" width="800">
+</p>
+<p align="center">
+  <b>My Reports & Status</b><br>
+  <img src="assets/screenshots/Citizen3.png" alt="Citizen Portal - My Reports" width="800">
+</p>
+<p align="center">
+  <b>Collection Schedule</b><br>
+  <img src="assets/screenshots/Citizen4.png" alt="Citizen Portal - Schedule" width="800">
+</p>
+<p align="center">
+  <b>Profile Settings</b><br>
+  <img src="assets/screenshots/Citizen5.png" alt="Citizen Portal - Profile Settings" width="800">
+</p>
 </details>
 
+### 🚛 Collector View
 <details>
-<summary><b>Collector View</b> (Click to expand)</summary>
-<img src="assets/screenshots/collector_1_Dashboard.png" alt="Collector Dashboard" width="800">
+<summary><b>View Collector Interfaces</b> (Click to expand)</summary>
+<p align="center">
+  <b>Dashboard & Assigned Tasks</b><br>
+  <img src="assets/screenshots/Collector1.png" alt="Collector View - Dashboard" width="800">
+</p>
+<p align="center">
+  <b>Active Task Details</b><br>
+  <img src="assets/screenshots/Collector2.png" alt="Collector View - Active Tasks" width="800">
+</p>
+<p align="center">
+  <b>Live Routing Map</b><br>
+  <img src="assets/screenshots/Collector3.png" alt="Collector View - Map" width="800">
+</p>
+<p align="center">
+  <b>Route Optimization</b><br>
+  <img src="assets/screenshots/Collector4.png" alt="Collector View - Route Optimization" width="800">
+</p>
 </details>
 
 ---
