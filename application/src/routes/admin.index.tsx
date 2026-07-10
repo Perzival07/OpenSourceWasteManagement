@@ -57,7 +57,15 @@ function AdminDashboard() {
 
   // Render Leaflet Map and Heatmap Layers
   useEffect(() => {
-    if (!mapRef.current || clusters.length === 0) return;
+    if (!mapRef.current) return;
+
+    // Fix default Leaflet icon paths in Vite/React
+    delete (L.Icon.Default.prototype as any)._getIconUrl;
+    L.Icon.Default.mergeOptions({
+      iconRetinaUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png",
+      iconUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png",
+      shadowUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png",
+    });
 
     // Check if map already initialized
     if (mapInstance.current) {
@@ -73,12 +81,11 @@ function AdminDashboard() {
 
     const latLngs: [number, number][] = [];
 
+    // 1. Draw Heatmap Intensity Circles in the background
     clusters.forEach((c) => {
       const lat = c.lat;
       const lng = c.lng;
       const count = c.count;
-
-      latLngs.push([lat, lng]);
 
       // Heat coloring based on density count
       let color = "#10b981"; // Green (low intensity)
@@ -89,26 +96,44 @@ function AdminDashboard() {
       }
 
       // Outer glow circle
-      const outerRadius = 150 + Math.min(count * 15, 150);
-      const outer = L.circle([lat, lng], {
-        radius: outerRadius,
+      L.circle([lat, lng], {
+        radius: 150 + Math.min(count * 15, 150),
         stroke: false,
         fillColor: color,
         fillOpacity: 0.15,
       }).addTo(map);
 
       // Inner heat intensity circle
-      const innerRadius = 60 + Math.min(count * 5, 60);
-      const inner = L.circle([lat, lng], {
-        radius: innerRadius,
+      L.circle([lat, lng], {
+        radius: 60 + Math.min(count * 5, 60),
         stroke: false,
         fillColor: color,
         fillOpacity: 0.35,
       }).addTo(map);
+    });
 
-      const popupText = `<b>${count} active report${count === 1 ? "" : "s"}</b> in this neighborhood`;
-      outer.bindPopup(popupText);
-      inner.bindPopup(popupText);
+    // 2. Draw individual pins (markers) for each report
+    const mapped = heatmapReports.filter(
+      (r) => r.latitude != null && r.longitude != null && !isNaN(Number(r.latitude)) && !isNaN(Number(r.longitude))
+    );
+
+    mapped.forEach((r) => {
+      const lat = Number(r.latitude);
+      const lng = Number(r.longitude);
+      latLngs.push([lat, lng]);
+
+      const marker = L.marker([lat, lng]).addTo(map);
+      marker.bindPopup(`
+        <div style="font-family: sans-serif; min-width: 140px;">
+          <div style="font-size: 11px; color: #666; font-family: monospace;">#${String(r.id).slice(0, 6)}</div>
+          <div style="font-weight: bold; font-size: 14px; margin-top: 2px;">${r.category || "Waste Report"}</div>
+          <div style="margin-top: 4px; display: inline-block; font-size: 10px; font-weight: bold; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; background-color: #f3f4f6; border: 1px solid #e5e7eb;">
+            ${r.status || "Pending"}
+          </div>
+          <div style="font-size: 12px; color: #444; margin-top: 6px;">${r.address || "Address unavailable"}</div>
+          ${r.message_text ? `<div style="font-size: 11px; color: #666; margin-top: 4px; border-top: 1px solid #eee; padding-top: 4px;">${r.message_text}</div>` : ""}
+        </div>
+      `);
     });
 
     if (latLngs.length > 0) {
@@ -121,7 +146,7 @@ function AdminDashboard() {
       map.remove();
       mapInstance.current = null;
     };
-  }, [clusters]);
+  }, [clusters, heatmapReports]);
 
   return (
     <>
@@ -168,13 +193,11 @@ function AdminDashboard() {
           <Skeleton className="h-[300px] sm:h-[400px] w-full" />
         ) : heatmapData.error ? (
           <EmptyState title="Couldn't load intensity map" body={heatmapData.error} />
-        ) : clusters.length === 0 ? (
-          <EmptyState title="No active coordinates" body="Reports need a latitude and longitude to appear on the heatmap." />
         ) : (
           <Card className="relative overflow-hidden h-[300px] sm:h-[400px] w-full">
             <div ref={mapRef} className="absolute inset-0 w-full h-full z-0" />
             <div className="absolute bottom-3 left-3 bg-card/90 backdrop-blur border border-border rounded-lg px-3 py-2 text-xs font-mono z-[1000] pointer-events-none">
-              {clusters.length} neighborhood hotspots plotted
+              {heatmapReports.filter((r) => r.latitude != null && r.longitude != null).length} report(s) plotted across {clusters.length} neighborhood hotspots
             </div>
           </Card>
         )}
