@@ -1,126 +1,135 @@
-# Smart City Reach
+# 🏙️ Smart City Reach
 
-Welcome to the Smart City Reach project! This repository contains the source code for the application and the computer vision models used in the project.
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Python](https://img.shields.io/badge/python-3.9+-blue.svg)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-green.svg)
+![React](https://img.shields.io/badge/React-18.2-blue.svg)
 
-## Directory Structure
-
-- `application/`: Contains the main web application (React frontend and FastAPI backend).
-- `gDinoSam/`: Contains the GroundingDINO and SAM (Segment Anything Model) integration for computer vision tasks.
-
----
-
-## 1. Setting up the Application (`application/`)
-
-The application consists of a modern React frontend (built with Vite) and a Python FastAPI backend.
-
-### Frontend Setup
-
-1. **Prerequisites**: Ensure you have [Node.js](https://nodejs.org/) and [Bun](https://bun.sh/) (or npm) installed.
-2. **Navigate to the application folder**:
-   ```bash
-   cd application
-   ```
-3. **Install dependencies**:
-   ```bash
-   bun install
-   # or npm install
-   ```
-4. **Run the frontend development server**:
-   ```bash
-   bun run dev
-   # or npm run dev
-   ```
-   The frontend will be available at `http://localhost:5173` (or as indicated in the terminal).
-
-### Backend Setup
-
-1. **Prerequisites**: Ensure you have Python 3.9+ installed.
-2. **Navigate to the backend folder**:
-   ```bash
-   cd application/backend
-   ```
-3. **Create and activate a virtual environment**:
-   - **Windows**:
-     ```bash
-     python -m venv venv
-     venv\Scripts\activate
-     ```
-   - **macOS/Linux**:
-     ```bash
-     python -m venv venv
-     source venv/bin/activate
-     ```
-4. **Install backend dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
-5. **Set up the Database & Environment Variables**:
-   - Copy `.env.example` to `.env` (if applicable) and fill in your database credentials.
-   - Run Alembic migrations to set up your database schema:
-     ```bash
-     alembic upgrade head
-     ```
-   - (Optional) Seed the database with demo users:
-     ```bash
-     python seed_demo_users.py
-     ```
-6. **Run the FastAPI server**:
-   ```bash
-   uvicorn app.main:app --reload
-   ```
-   The backend API will be running at `http://localhost:8000`.
+**Smart City Reach** is an integrated platform designed to streamline urban management, civic engagement, and resource allocation. It bridges the gap between citizens and city administration by providing a robust ecosystem for incident reporting, task assignment, and AI-driven image analysis.
 
 ---
 
-## 2. Setting up the Computer Vision Models (`gDinoSam/`)
+## ✨ Key Features
 
-The `gDinoSam` directory contains the integration of GroundingDINO and SAM models for advanced image segmentation and detection.
+- **Role-Based Workflows**: Tailored interfaces for **Citizens** (reporting incidents), **Collectors/Workers** (managing tasks & schedules), and **Admins** (analytics & user management).
+- **Incident & Announcement Management**: Real-time reporting of city incidents with dedicated announcement channels for civic updates.
+- **AI-Powered Computer Vision**: Integrates **GroundingDINO** and **Segment Anything Model (SAM)** for advanced image segmentation and automated detection of urban issues.
+- **Modern Tech Stack**: Lightning-fast backend powered by FastAPI, and a responsive frontend built with React & Vite.
+
+---
+
+## 📂 Repository Structure
+
+- `application/`: Contains the main web platform.
+  - `src/`: React frontend (Vite + TypeScript).
+  - `backend/`: Python FastAPI backend.
+- `gDinoSam/`: Contains the GroundingDINO and SAM models for computer vision tasks.
+
+---
+
+## 🚀 Getting Started
+
+### 1. The Frontend (React + Vite)
+
+**Prerequisites**: [Node.js](https://nodejs.org/) and [Bun](https://bun.sh/) (or npm).
+
+```bash
+# 1. Navigate to the application directory
+cd application
+
+# 2. Install dependencies using Bun (recommended) or npm
+bun install
+# or: npm install
+
+# 3. Start the development server
+bun run dev
+# or: npm run dev
+```
+*The frontend will be available at `http://localhost:5173`.*
+
+### 2. The Backend (FastAPI)
+
+**Prerequisites**: Python 3.9+.
+
+```bash
+# 1. Navigate to the backend directory
+cd application/backend
+
+# 2. Create and activate a virtual environment
+# On Windows:
+python -m venv venv
+venv\Scripts\activate
+# On macOS/Linux:
+python -m venv venv
+source venv/bin/activate
+
+# 3. Install backend dependencies
+pip install -r requirements.txt
+
+# 4. Database Setup & Migrations
+# Ensure you copy .env.example to .env and configure your database
+alembic upgrade head
+
+# 5. (Optional) Seed the database with demo users
+python seed_demo_users.py
+
+# 6. Run the FastAPI server
+uvicorn app.main:app --reload
+```
+*The backend API will be available at `http://localhost:8000`.*
+
+---
+
+## 🧠 Setting up the Computer Vision Models (`gDinoSam/`)
+
+The `gDinoSam` directory contains our advanced integration of GroundingDINO and SAM. 
 
 ### Environment Setup
 
-1. **Navigate to the model directory**:
-   ```bash
-   cd gDinoSam
-   ```
-2. **Create and activate a virtual environment**:
-   - **Windows**:
-     ```bash
-     python -m venv venv
-     venv\Scripts\activate
-     ```
-   - **macOS/Linux**:
-     ```bash
-     python -m venv venv
-     source venv/bin/activate
-     ```
-3. **Install dependencies**:
-   ```bash
-   cd GroundingDINO
-   pip install -r requirements.txt
-   pip install -e .
-   ```
+```bash
+# 1. Navigate to the model directory
+cd gDinoSam
+
+# 2. Create and activate a virtual environment
+python -m venv venv
+source venv/bin/activate  # (Use venv\Scripts\activate on Windows)
+
+# 3. Install GroundingDINO and its dependencies
+cd GroundingDINO
+pip install -r requirements.txt
+pip install -e .
+```
 
 ### Downloading Model Weights
 
-Due to GitHub's file size limits, the large model weights are not tracked in this repository. You must download them manually into the `gDinoSam/GroundingDINO/weights/` folder.
+Due to size limits, model weights are not tracked in Git. You must download them manually to the `gDinoSam/GroundingDINO/weights/` folder.
 
-1. **Create the weights directory** (if it doesn't exist):
-   ```bash
-   mkdir -p weights
-   cd weights
-   ```
-2. **Download GroundingDINO weights**:
-   ```bash
-   wget -q https://github.com/IDEA-Research/GroundingDINO/releases/download/v0.1.0-alpha/groundingdino_swint_ogc.pth
-   ```
-3. **Download SAM weights**:
-   Depending on the specific SAM version used (e.g., SAM 2.1 Hiera Large), download the appropriate `.pt` file and place it in the `weights` directory.
-   - Example (SAM2.1 Hiera Large): [Download Link](https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_large.pt)
+```bash
+# Create the weights directory
+mkdir -p weights
+cd weights
+
+# Download GroundingDINO weights
+wget -q https://github.com/IDEA-Research/GroundingDINO/releases/download/v0.1.0-alpha/groundingdino_swint_ogc.pth
+```
+**SAM Weights**: Download the SAM weights (e.g., SAM 2.1 Hiera Large) and place the `.pt` file in the same `weights` directory.
+- Example: [Download SAM2.1 Hiera Large](https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_large.pt)
 
 ### Running Inference
 
-Once the environment is set up and weights are downloaded, you can run the demo script:
+Once the environment is active and weights are loaded, run the demo script to process images from the `input/` folder and output results to `output/`:
+
 ```bash
 python grounded_sam2_demo.py
 ```
-This script will typically process images from the `input/` folder and save the results to the `output/` folder.
+
+---
+
+## 🤝 Contributing
+
+Contributions are always welcome! Please open an issue or submit a Pull Request to help improve the Smart City Reach platform.
+
+## 📄 License
+
+This project is open-source and available under the [MIT License](LICENSE).
+
