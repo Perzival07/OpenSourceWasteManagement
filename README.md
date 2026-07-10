@@ -18,6 +18,25 @@
 
 ---
 
+## 📸 Screenshots
+
+<details>
+<summary><b>Admin Dashboard</b> (Click to expand)</summary>
+<img src="assets/screenshots/admin_1_Dashboard.png" alt="Admin Dashboard" width="800">
+</details>
+
+<details>
+<summary><b>Citizen Portal</b> (Click to expand)</summary>
+<img src="assets/screenshots/citizen_1_Dashboard.png" alt="Citizen Dashboard" width="800">
+</details>
+
+<details>
+<summary><b>Collector View</b> (Click to expand)</summary>
+<img src="assets/screenshots/collector_1_Dashboard.png" alt="Collector Dashboard" width="800">
+</details>
+
+---
+
 ## 📂 Repository Structure
 
 - `application/`: Contains the main web platform.
