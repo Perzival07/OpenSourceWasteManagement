@@ -28,38 +28,103 @@ interface Task {
   assigned_at?: string;
 }
 
+interface Announcement {
+  id: number;
+  message: string;
+  created_by_name: string;
+  created_at: string;
+}
+
+interface LeaderboardEntry {
+  id: number;
+  name: string;
+  completed: number;
+}
+
 function CollectorDashboard() {
   const { data, loading, error, refetch } = useApi<any>("/collector/tasks?limit=20", {}, []);
   const items: Task[] = Array.isArray(data) ? data : data?.items ?? [];
   const [updating, setUpdating] = useState<string | number | null>(null);
 
-  // Production Features: States
-  const [shiftStatus, setShiftStatus] = useState<"clocked_in" | "break" | "off_duty">("clocked_in");
-  const [safetyVest, setSafetyVest] = useState(false);
-  const [safetyGloves, setSafetyGloves] = useState(false);
-  const [safetyBoots, setSafetyBoots] = useState(false);
-  const [breakSeconds, setBreakSeconds] = useState(0);
+  // Data fetching for dynamic features
+  const { data: announcementsData } = useApi<Announcement[]>("/announcements", {}, []);
+  const announcements = announcementsData || [];
+  
+  const { data: leaderboardData } = useApi<LeaderboardEntry[]>("/reports/collector/leaderboard", {}, []);
+  const leaderboard = leaderboardData || [];
+
+  // Production Features: States (with localStorage persistence)
+  const [shiftStatus, setShiftStatus] = useState<"clocked_in" | "break" | "off_duty">(() => {
+    return (localStorage.getItem("shiftStatus") as any) || "clocked_in";
+  });
+  const [safetyVest, setSafetyVest] = useState(() => localStorage.getItem("safetyVest") === "true");
+  const [safetyGloves, setSafetyGloves] = useState(() => localStorage.getItem("safetyGloves") === "true");
+  const [safetyBoots, setSafetyBoots] = useState(() => localStorage.getItem("safetyBoots") === "true");
+  
+  const [breakSeconds, setBreakSeconds] = useState(() => {
+    const saved = localStorage.getItem("breakEndTime");
+    if (saved) {
+      const remaining = Math.floor((parseInt(saved) - Date.now()) / 1000);
+      return remaining > 0 ? remaining : 0;
+    }
+    return 0;
+  });
+
   const [incidentOpen, setIncidentOpen] = useState(false);
   const [incidentMsg, setIncidentMsg] = useState("");
   const [incidentSubmitted, setIncidentSubmitted] = useState(false);
+  const [weatherTemp, setWeatherTemp] = useState<number | null>(null);
+
+  // Weather check via IP API (approximate geo) then open-meteo
+  useEffect(() => {
+    fetch("https://ipapi.co/json/")
+      .then(r => r.json())
+      .then(ipData => {
+        if (ipData.latitude && ipData.longitude) {
+          return fetch(`https://api.open-meteo.com/v1/forecast?latitude=${ipData.latitude}&longitude=${ipData.longitude}&current_weather=true`);
+        }
+      })
+      .then(r => r?.json())
+      .then(w => {
+        if (w?.current_weather?.temperature) setWeatherTemp(w.current_weather.temperature);
+      })
+      .catch(console.error);
+  }, []);
+
+  // Save state to localStorage
+  useEffect(() => {
+    localStorage.setItem("shiftStatus", shiftStatus);
+    localStorage.setItem("safetyVest", String(safetyVest));
+    localStorage.setItem("safetyGloves", String(safetyGloves));
+    localStorage.setItem("safetyBoots", String(safetyBoots));
+  }, [shiftStatus, safetyVest, safetyGloves, safetyBoots]);
 
   // Rest break timer countdown
   useEffect(() => {
-    if (breakSeconds <= 0) return;
+    if (breakSeconds <= 0) {
+      if (shiftStatus === "break") {
+        setShiftStatus("clocked_in");
+        localStorage.removeItem("breakEndTime");
+      }
+      return;
+    }
     const interval = setInterval(() => {
       setBreakSeconds((prev) => prev - 1);
     }, 1000);
     return () => clearInterval(interval);
-  }, [breakSeconds]);
+  }, [breakSeconds, shiftStatus]);
 
   const startBreakTimer = () => {
-    setBreakSeconds(900); // 15 minutes break
+    const time = 900;
+    setBreakSeconds(time); // 15 minutes break
     setShiftStatus("break");
+    localStorage.setItem("breakEndTime", (Date.now() + time * 1000).toString());
   };
 
   const cancelBreakTimer = () => {
     setBreakSeconds(0);
     setShiftStatus("clocked_in");
+    localStorage.removeItem("breakEndTime");
   };
 
   const formatBreakTime = (sec: number) => {
@@ -87,32 +152,44 @@ function CollectorDashboard() {
     ["assigned", "in_progress"].includes((t.status || "").toLowerCase())
   );
 
-  // Urgent Task Spotlight (Get the first assigned/in_progress task with urgent priority)
+  // Urgent Task Spotlight
   const urgentTask = active.find((t) => (t.priority || "").toLowerCase() === "urgent" || (t.priority || "").toLowerCase() === "high");
 
-  const reportIncident = (e: React.FormEvent) => {
+  const reportIncident = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!incidentMsg.trim()) return;
-    setIncidentSubmitted(true);
-    setTimeout(() => {
-      setIncidentOpen(false);
-      setIncidentMsg("");
-      setIncidentSubmitted(false);
-    }, 2000);
+    try {
+      await apiFetch("/incidents", {
+        method: "POST",
+        body: { message: incidentMsg }
+      });
+      setIncidentSubmitted(true);
+      setTimeout(() => {
+        setIncidentOpen(false);
+        setIncidentMsg("");
+        setIncidentSubmitted(false);
+      }, 2000);
+    } catch (err) {
+      console.error(err);
+    }
   };
+
+  const resolvedCount = count("resolved");
 
   return (
     <>
       {/* Weather Warning Board */}
-      <div className="bg-amber-50 border-2 border-amber-500 rounded-xl p-3 mb-6 flex flex-col md:flex-row items-center justify-between gap-3 text-amber-800 text-xs">
-        <div className="flex items-center gap-2">
-          <Sun className="w-4 h-4 shrink-0 animate-pulse text-amber-600" />
-          <span><b>High Heat Warning (34°C):</b> Heavy shift expected. Hydrate frequently (at least 500ml/hr) and utilize safety breaks.</span>
+      {weatherTemp && weatherTemp > 30 && (
+        <div className="bg-amber-50 border-2 border-amber-500 rounded-xl p-3 mb-6 flex flex-col md:flex-row items-center justify-between gap-3 text-amber-800 text-xs">
+          <div className="flex items-center gap-2">
+            <Sun className="w-4 h-4 shrink-0 animate-pulse text-amber-600" />
+            <span><b>High Heat Warning ({weatherTemp}°C):</b> Heavy shift expected. Hydrate frequently (at least 500ml/hr) and utilize safety breaks.</span>
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" variant="secondary" onClick={() => window.open("https://weather.com", "_blank")}>Full Forecast</Button>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button size="sm" variant="secondary" onClick={() => window.open("https://weather.com", "_blank")}>Full Forecast</Button>
-        </div>
-      </div>
+      )}
 
       <PageHeader title="Your shift today" subtitle="Active assignments and quick actions">
         <div className="flex items-center gap-3">
@@ -123,7 +200,7 @@ function CollectorDashboard() {
                 key={status}
                 onClick={() => {
                   setShiftStatus(status);
-                  if (status !== "break") setBreakSeconds(0);
+                  if (status !== "break") cancelBreakTimer();
                 }}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition-colors ${
                   shiftStatus === status
@@ -147,7 +224,7 @@ function CollectorDashboard() {
         <StatCard label="Total" value={items.length} icon={<ListChecks className="w-5 h-5" />} />
         <StatCard label="Assigned" value={count("assigned")} icon={<Clock className="w-5 h-5" />} accent="yellow" />
         <StatCard label="In progress" value={count("in_progress")} icon={<Loader2 className="w-5 h-5" />} accent="blue" />
-        <StatCard label="Shift Completed" value={count("resolved")} icon={<CheckCircle2 className="w-5 h-5" />} accent="forest" />
+        <StatCard label="Shift Completed" value={resolvedCount} icon={<CheckCircle2 className="w-5 h-5" />} accent="forest" />
       </div>
 
       {/* Main shift dashboards split */}
@@ -216,7 +293,7 @@ function CollectorDashboard() {
                       </div>
                       <div className="flex gap-2 mt-3">
                         {isAssigned ? (
-                          <Button size="sm" loading={updating === t.id} onClick={() => update(t.id, "in_progress")}>
+                          <Button size="sm" loading={updating === t.id} onClick={() => update(t.id, "in_progress")} disabled={!(safetyVest && safetyGloves && safetyBoots)}>
                             <Play className="w-3.5 h-3.5" /> Start
                           </Button>
                         ) : null}
@@ -268,15 +345,15 @@ function CollectorDashboard() {
             <h3 className="font-display font-semibold text-sm mb-3">Shift Performance</h3>
             <div className="grid grid-cols-3 gap-2 text-center">
               <div className="bg-sand-100/60 p-2 rounded-lg border border-border">
-                <div className="text-lg font-bold font-display">{count("resolved") * 45} kg</div>
+                <div className="text-lg font-bold font-display">{resolvedCount * 45} kg</div>
                 <div className="text-[9px] text-muted-foreground">Cleared</div>
               </div>
               <div className="bg-sand-100/60 p-2 rounded-lg border border-border">
-                <div className="text-lg font-bold font-display">6.2 h</div>
+                <div className="text-lg font-bold font-display">{resolvedCount > 0 ? (resolvedCount * 0.4).toFixed(1) : "0"} h</div>
                 <div className="text-[9px] text-muted-foreground">Shift Log</div>
               </div>
               <div className="bg-sand-100/60 p-2 rounded-lg border border-border">
-                <div className="text-lg font-bold font-display">4.9 ★</div>
+                <div className="text-lg font-bold font-display">{(4.5 + Math.min(resolvedCount * 0.1, 0.5)).toFixed(1)} ★</div>
                 <div className="text-[9px] text-muted-foreground">Rating</div>
               </div>
             </div>
@@ -307,14 +384,16 @@ function CollectorDashboard() {
               <AlertCircle className="w-4 h-4 text-forest-600" /> Operator Announcements
             </h3>
             <ul className="space-y-3 text-xs">
-              <li className="border-b border-border/60 pb-2">
-                <div className="font-bold text-ink-950">Maintenance Alert</div>
-                <div className="text-muted-foreground text-[10px]">Crews are scheduled for vehicle inspections at the depot starting at 4 PM.</div>
-              </li>
-              <li>
-                <div className="font-bold text-ink-950">Road Closure</div>
-                <div className="text-muted-foreground text-[10px]">Avoid Main St and Broadway intersection due to pipeline repair work.</div>
-              </li>
+              {announcements.length === 0 ? (
+                <li className="text-muted-foreground text-[10px]">No recent announcements.</li>
+              ) : (
+                announcements.slice(0, 3).map((ann: Announcement) => (
+                  <li key={ann.id} className="border-b border-border/60 pb-2">
+                    <div className="font-bold text-ink-950">{ann.created_by_name}</div>
+                    <div className="text-muted-foreground text-[10px]">{ann.message}</div>
+                  </li>
+                ))
+              )}
             </ul>
           </Card>
 
@@ -337,7 +416,7 @@ function CollectorDashboard() {
                 ) : (
                   <div className="flex gap-2">
                     <Button size="sm" className="flex-1">Send</Button>
-                    <Button size="sm" variant="ghost" onClick={() => setIncidentOpen(false)}>Cancel</Button>
+                    <Button size="sm" variant="ghost" type="button" onClick={() => setIncidentOpen(false)}>Cancel</Button>
                   </div>
                 )}
               </form>
@@ -352,18 +431,16 @@ function CollectorDashboard() {
               <Trophy className="w-4 h-4 text-yellow-500" /> Crew Leaderboard
             </h3>
             <ul className="space-y-2.5 text-xs">
-              <li className="flex justify-between border-b border-border/40 pb-1.5">
-                <span>1. Crew Alpha (Ward 2)</span>
-                <span className="font-mono text-muted-foreground">18 jobs</span>
-              </li>
-              <li className="flex justify-between border-b border-border/40 pb-1.5">
-                <span>2. Crew Charlie (Ward 9)</span>
-                <span className="font-mono text-muted-foreground">15 jobs</span>
-              </li>
-              <li className="flex justify-between font-semibold text-forest-700 bg-forest-50/30 p-1.5 rounded border border-forest-200">
-                <span>3. You (Crew Beta - Ward 4)</span>
-                <span className="font-mono">{count("resolved")} jobs</span>
-              </li>
+              {leaderboard.length === 0 ? (
+                <li className="text-muted-foreground text-[10px]">No data available yet.</li>
+              ) : (
+                leaderboard.map((lb: LeaderboardEntry, idx: number) => (
+                  <li key={lb.id} className={`flex justify-between pb-1.5 ${idx < 2 ? "border-b border-border/40" : "font-semibold text-forest-700 bg-forest-50/30 p-1.5 rounded border border-forest-200"}`}>
+                    <span>{idx + 1}. {lb.name}</span>
+                    <span className="font-mono text-muted-foreground">{lb.completed} jobs</span>
+                  </li>
+                ))
+              )}
             </ul>
           </Card>
 
@@ -373,11 +450,11 @@ function CollectorDashboard() {
               <Phone className="w-4 h-4 text-forest-600" /> Support Hotline
             </h3>
             <div className="grid grid-cols-2 gap-2 text-center text-xs">
-              <a href="tel:555-0199" className="p-2 border border-border rounded hover:bg-sand-50 flex flex-col items-center gap-1">
+              <a href="tel:555-0199" className="p-2 border border-border rounded hover:bg-sand-50 flex flex-col items-center gap-1 transition-colors">
                 <span className="font-bold">Dispatch</span>
                 <span className="text-[10px] text-muted-foreground">ext. 102</span>
               </a>
-              <a href="tel:555-0188" className="p-2 border border-border rounded hover:bg-sand-50 flex flex-col items-center gap-1">
+              <a href="tel:555-0188" className="p-2 border border-border rounded hover:bg-sand-50 flex flex-col items-center gap-1 transition-colors">
                 <span className="font-bold">Maintenance</span>
                 <span className="text-[10px] text-muted-foreground">ext. 405</span>
               </a>

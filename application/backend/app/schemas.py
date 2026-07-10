@@ -133,6 +133,17 @@ class TopCollector(BaseModel):
     count: int
     avg_minutes: Optional[float] = None
 
+class ZoneSLA(BaseModel):
+    zone: str
+    avg_resolution_hours: float
+    on_time_rate: float
+    status: str
+
+class TonnageProjection(BaseModel):
+    month: str
+    projected_tons: float
+    budget_estimate: float
+
 class AnalyticsResponse(BaseModel):
     summary: SummaryStats
     reports_over_time: List[TimeSeriesPoint]
@@ -140,6 +151,9 @@ class AnalyticsResponse(BaseModel):
     by_status: List[CategoryDistribution]
     by_zone: List[CategoryDistribution]
     top_collectors: List[TopCollector]
+    ai_confidence_avg: Optional[float] = None
+    zone_slas: Optional[List[ZoneSLA]] = None
+    tonnage_projections: Optional[List[TonnageProjection]] = None
 
 # ---- Auth ----
 class LoginRequest(BaseModel):
@@ -159,3 +173,57 @@ class TaskUpdate(BaseModel):
 class PasswordChange(BaseModel):
     old_password: str
     new_password: str
+
+# ---- Announcement ----
+class AnnouncementCreate(BaseModel):
+    message: str
+
+class AnnouncementOut(BaseModel):
+    id: int
+    message: str
+    created_by_name: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+# ---- Incident ----
+class IncidentCreate(BaseModel):
+    message: str
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+
+class IncidentOut(BaseModel):
+    id: int
+    collector_id: int
+    collector_name: str
+    message: str
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+# ---- Audit Log ----
+class AuditLogOut(BaseModel):
+    id: int
+    admin_name: str
+    action: str
+    details: Optional[str] = None
+    timestamp: datetime
+
+    class Config:
+        from_attributes = True
+
+# ---- System Settings ----
+class SystemSettingUpdate(BaseModel):
+    value: str
+
+class SystemSettingOut(BaseModel):
+    key: str
+    value: str
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True

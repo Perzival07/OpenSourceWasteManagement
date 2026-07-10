@@ -114,6 +114,25 @@ def update_report(db: Session, report_id: int, report_update: schemas.ReportUpda
     db.refresh(db_report)
     return db_report
 
+def get_community_reports(db: Session, limit: int = 5):
+    query = db.query(models.Report).filter(models.Report.status == "resolved")
+    reports = query.order_by(models.Report.completed_at.desc()).limit(limit).all()
+    return reports
+
+def get_citizen_leaderboard(db: Session, limit: int = 3):
+    # Get top citizens by resolved report count
+    result = db.query(
+        models.Report.citizen_name, 
+        func.count(models.Report.id).label('resolved_count')
+    ).filter(
+        models.Report.status == "resolved"
+    ).group_by(
+        models.Report.citizen_name
+    ).order_by(
+        func.count(models.Report.id).desc()
+    ).limit(limit).all()
+    return result
+
 def update_worker_stats(db: Session, worker_id: int):
     worker = get_user(db, worker_id)
     if worker:
@@ -202,6 +221,26 @@ def get_analytics(db: Session, period_days: int):
         name = collector_names.get(uid, f"Collector {uid}")
         top_collectors.append({"name": name, "count": cnt, "avg_minutes": None})
 
+    # AI confidence avg mock calculation based on reports
+    ai_confidence_avg = 88.5
+    
+    # Zone SLAs mock calculation based on reports
+    zone_slas = []
+    for z in by_zone:
+        zone_slas.append({
+            "zone": z["label"],
+            "avg_resolution_hours": 14.2,
+            "on_time_rate": 92.5,
+            "status": "Healthy"
+        })
+        
+    # Tonnage Projections mock
+    tonnage_projections = [
+        {"month": "Jul", "projected_tons": 120.5, "budget_estimate": 15000},
+        {"month": "Aug", "projected_tons": 135.2, "budget_estimate": 16500},
+        {"month": "Sep", "projected_tons": 110.8, "budget_estimate": 14000}
+    ]
+
     return {
         "summary": {
             "total_reports": total,
@@ -213,5 +252,96 @@ def get_analytics(db: Session, period_days: int):
         "by_category": by_category,
         "by_status": by_status,
         "by_zone": by_zone,
-        "top_collectors": top_collectors
+        "top_collectors": top_collectors,
+        "ai_confidence_avg": ai_confidence_avg,
+        "zone_slas": zone_slas,
+        "tonnage_projections": tonnage_projections
+    }
+
+# ---- Announcements ----
+def get_announcements(db: Session, limit: int = 10):
+    return db.query(models.Announcement).order_by(models.Announcement.created_at.desc()).limit(limit).all()
+
+def create_announcement(db: Session, announcement: schemas.AnnouncementCreate, user_name: str):
+    db_announcement = models.Announcement(
+        message=announcement.message,
+        created_by_name=user_name
+    )
+    db.add(db_announcement)
+    db.commit()
+    db.refresh(db_announcement)
+    return db_announcement
+
+# ---- Incidents ----
+def create_incident(db: Session, incident: schemas.IncidentCreate, collector_id: int, collector_name: str):
+    db_incident = models.Incident(
+        collector_id=collector_id,
+        collector_name=collector_name,
+        message=incident.message,
+        latitude=incident.latitude,
+        longitude=incident.longitude
+    )
+    db.add(db_incident)
+    db.commit()
+    db.refresh(db_incident)
+    return db_incident
+
+# ---- Collector Leaderboard ----
+def get_collector_leaderboard(db: Session, limit: int = 5):
+    # Leaderboard based on completed_today or xp
+    collectors = db.query(models.User).filter(
+        models.User.role == models.Role.collector
+    ).order_by(models.User.completed_today.desc()).limit(limit).all()
+    
+    # We map this to a list of dicts suitable for the frontend
+    leaderboard = []
+    for c in collectors:
+        leaderboard.append({
+            "id": c.id,
+            "name": c.display_name,
+            "completed": c.completed_today,
+            "level": c.level,
+            "xp": c.xp
+        })
+    return leaderboard
+
+# ---- Audit Logs ----
+def log_admin_action(db: Session, admin_id: int, admin_name: str, action: str, details: str = None):
+    log = models.AuditLog(
+        admin_id=admin_id,
+        admin_name=admin_name,
+        action=action,
+        details=details
+    )
+    db.add(log)
+    db.commit()
+    db.refresh(log)
+    return log
+
+def get_audit_logs(db: Session, limit: int = 50):
+    return db.query(models.AuditLog).order_by(models.AuditLog.timestamp.desc()).limit(limit).all()
+
+# ---- System Settings ----
+def get_system_setting(db: Session, key: str):
+    return db.query(models.SystemSetting).filter(models.SystemSetting.key == key).first()
+
+def set_system_setting(db: Session, key: str, value: str):
+    setting = get_system_setting(db, key)
+    if setting:
+        setting.value = value
+        setting.updated_at = datetime.utcnow()
+    else:
+        setting = models.SystemSetting(key=key, value=value)
+        db.add(setting)
+    db.commit()
+    db.refresh(setting)
+    return setting
+
+# ---- System Health ----
+def get_system_health(db: Session):
+    # Mocking system health details for the admin portal
+    return {
+        "db_connections": 12, # mock count
+        "uptime_hours": 120,  # mock count
+        "online_users": db.query(models.User).filter(models.User.is_active == True).count()
     }

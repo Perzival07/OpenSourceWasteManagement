@@ -76,3 +76,39 @@ class Zone(Base):
     name = Column(String, unique=True, nullable=False)
     description = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+class Announcement(Base):
+    __tablename__ = "announcements"
+    id = Column(Integer, primary_key=True, index=True)
+    message = Column(String, nullable=False)
+    created_by_name = Column(String, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class Incident(Base):
+    __tablename__ = "incidents"
+    id = Column(Integer, primary_key=True, index=True)
+    collector_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    collector_name = Column(String, nullable=False)
+    message = Column(String, nullable=False)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    collector = relationship("User", foreign_keys=[collector_id])
+
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+    id = Column(Integer, primary_key=True, index=True)
+    admin_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    admin_name = Column(String, nullable=False)
+    action = Column(String, nullable=False)
+    details = Column(String, nullable=True)
+    timestamp = Column(DateTime, default=datetime.utcnow)
+
+    admin = relationship("User", foreign_keys=[admin_id])
+
+class SystemSetting(Base):
+    __tablename__ = "system_settings"
+    key = Column(String, primary_key=True, index=True)
+    value = Column(String, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow)

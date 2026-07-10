@@ -6,7 +6,7 @@ from slowapi.middleware import SlowAPIMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from .database import engine, Base
-from .routers import auth, users, reports, admin, collector
+from .routers import auth, users, reports, admin, collector, announcements, incidents
 from .config import settings
 import logging
 from pathlib import Path
@@ -50,6 +50,8 @@ app.include_router(users.router)
 app.include_router(reports.router)
 app.include_router(admin.router)
 app.include_router(collector.router)
+app.include_router(announcements.router, prefix="/announcements", tags=["announcements"])
+app.include_router(incidents.router, prefix="/incidents", tags=["incidents"])
 
 @app.get("/")
 @limiter.limit("100/minute")

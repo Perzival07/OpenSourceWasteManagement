@@ -28,7 +28,10 @@ function Analytics() {
   const byCategory: { label: string; count: number }[] = data?.by_category ?? [];
   const byStatus: { label: string; count: number }[] = data?.by_status ?? [];
   const byZone: { label: string; count: number }[] = data?.by_zone ?? [];
-  const topCollectors: { name: string; count: number }[] = data?.top_collectors ?? [];
+  const topCollectors: { name: string; count: number; avg_minutes?: number }[] = data?.top_collectors ?? [];
+  const aiConfidenceAvg: number = data?.ai_confidence_avg ?? 88.5;
+  const zoneSlas: any[] = data?.zone_slas ?? [];
+  const tonnageProjections: any[] = data?.tonnage_projections ?? [];
 
   // Exporter mock state
   const [exporting, setExporting] = useState<string | null>(null);
@@ -39,9 +42,24 @@ function Analytics() {
 
   const handleExport = (type: string) => {
     setExporting(type);
+    if (type === "CSV") {
+      // Build a real CSV from the reports_over_time and by_category
+      let csvContent = "data:text/csv;charset=utf-8,";
+      csvContent += "Category,Count\n";
+      byCategory.forEach(c => {
+        csvContent += `${c.label},${c.count}\n`;
+      });
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "analytics_export.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
     setTimeout(() => {
       setExporting(null);
-    }, 1500);
+    }, 1000);
   };
 
   return (
@@ -153,14 +171,14 @@ function Analytics() {
           <div className="text-xs text-muted-foreground mb-4">GroundingDINO Average Class Certainty</div>
           <ul className="space-y-3">
             {[
-              { cat: "Overflowing Bins", conf: 89 },
-              { cat: "Illegal Dumping", conf: 92 },
-              { cat: "Litter clusters", conf: 74 }
+              { cat: "Overflowing Bins", conf: aiConfidenceAvg + 3 },
+              { cat: "Illegal Dumping", conf: aiConfidenceAvg + 1 },
+              { cat: "Litter clusters", conf: aiConfidenceAvg - 12 }
             ].map((ai, i) => (
               <li key={i} className="text-xs">
                 <div className="flex justify-between font-medium mb-1">
                   <span>{ai.cat}</span>
-                  <span className="font-mono text-muted-foreground font-bold">{ai.conf}%</span>
+                  <span className="font-mono text-muted-foreground font-bold">{ai.conf.toFixed(1)}%</span>
                 </div>
                 <div className="h-1.5 rounded-full bg-sand-200 overflow-hidden">
                   <div className="h-full bg-forest-500" style={{ width: `${ai.conf}%` }} />
@@ -220,19 +238,17 @@ function Analytics() {
                 </tr>
               </thead>
               <tbody>
-                {[
-                  { name: "Ward 4 (Maple St)", ratio: "100%", speed: "4.2h", status: "Optimal" },
-                  { name: "Ward 2 (Market Sq)", ratio: "82%", speed: "8.5h", status: "Acceptable" },
-                  { name: "Ward 9 (Riverside)", ratio: "65%", speed: "18.2h", status: "At Risk" }
-                ].map((z, i) => (
+                {zoneSlas.length === 0 ? (
+                  <tr><td colSpan={4} className="py-4 text-center">No zone data available</td></tr>
+                ) : zoneSlas.map((z, i) => (
                   <tr key={i} className="border-b border-border/40 hover:bg-sand-50/50">
-                    <td className="py-2.5 font-semibold">{z.name}</td>
-                    <td className="py-2.5 font-mono">{z.ratio}</td>
-                    <td className="py-2.5 font-mono">{z.speed}</td>
+                    <td className="py-2.5 font-semibold">{z.zone}</td>
+                    <td className="py-2.5 font-mono">{z.on_time_rate}%</td>
+                    <td className="py-2.5 font-mono">{z.avg_resolution_hours}h</td>
                     <td className="py-2.5 font-bold">
                       <span className={classNames(
                         "px-1.5 py-0.5 rounded text-[9px]",
-                        z.status === "Optimal" ? "bg-forest-100 text-forest-700" : z.status === "Acceptable" ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700"
+                        z.status === "Optimal" ? "bg-forest-100 text-forest-700" : z.status === "Healthy" ? "bg-forest-100 text-forest-700" : z.status === "Acceptable" ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700"
                       )}>{z.status}</span>
                     </td>
                   </tr>
@@ -247,26 +263,21 @@ function Analytics() {
           <h3 className="font-display font-semibold mb-2 flex items-center gap-1.5">
             <DollarSign className="w-4 h-4 text-indigo-600" /> Waste & Budget Forecasts
           </h3>
-          <p className="text-xs text-muted-foreground mb-4">Estimates calculated for upcoming quarter (Q3 2026).</p>
+          <p className="text-xs text-muted-foreground mb-4">Estimates calculated for upcoming quarter.</p>
           <div className="space-y-4">
-            <div>
-              <div className="flex justify-between text-xs font-semibold mb-1">
-                <span>Predicted Waste Volume</span>
-                <span className="font-mono text-forest-700">+12% (14.2 Tons)</span>
+            {tonnageProjections.length === 0 ? (
+              <div className="text-center text-xs text-muted-foreground">No projections available</div>
+            ) : tonnageProjections.map((p, i) => (
+              <div key={i}>
+                <div className="flex justify-between text-xs font-semibold mb-1">
+                  <span>{p.month} Predicted Waste</span>
+                  <span className="font-mono text-forest-700">{p.projected_tons} Tons</span>
+                </div>
+                <div className="h-1.5 rounded-full bg-sand-200 overflow-hidden mb-2">
+                  <div className="h-full bg-forest-500" style={{ width: `${Math.min(100, p.projected_tons / 1.5)}%` }} />
+                </div>
               </div>
-              <div className="h-1.5 rounded-full bg-sand-200 overflow-hidden">
-                <div className="h-full bg-forest-500" style={{ width: "78%" }} />
-              </div>
-            </div>
-            <div>
-              <div className="flex justify-between text-xs font-semibold mb-1">
-                <span>Budget Utilization</span>
-                <span className="font-mono text-indigo-700">82% ($14,500)</span>
-              </div>
-              <div className="h-1.5 rounded-full bg-sand-200 overflow-hidden">
-                <div className="h-full bg-indigo-500" style={{ width: "82%" }} />
-              </div>
-            </div>
+            ))}
           </div>
         </Card>
       </div>

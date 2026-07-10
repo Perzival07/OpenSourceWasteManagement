@@ -28,6 +28,12 @@ function AdminDashboard() {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<L.Map | null>(null);
 
+  const { data: auditLogsData } = useApi<any[]>("/admin/audit_logs", {}, []);
+  const auditLogs = auditLogsData || [];
+
+  const { data: healthData } = useApi<any>("/admin/health", {}, []);
+  const health = healthData || {};
+
   // Production Features States
   const [announcementText, setAnnouncementText] = useState("");
   const [broadcasted, setBroadcasted] = useState(false);
@@ -43,14 +49,25 @@ function AdminDashboard() {
   const [optimizing, setOptimizing] = useState(false);
   const [optimizedStatus, setOptimizedStatus] = useState("");
 
-  const handleBroadcast = (e: React.FormEvent) => {
+  const handleBroadcast = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!announcementText.trim()) return;
-    setBroadcasted(true);
-    setTimeout(() => {
-      setAnnouncementText("");
-      setBroadcasted(false);
-    }, 2000);
+    try {
+      const res = await fetch("http://127.0.0.1:8000/announcements", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token")}` },
+        body: JSON.stringify({ message: announcementText })
+      });
+      if (res.ok) {
+        setBroadcasted(true);
+        setTimeout(() => {
+          setAnnouncementText("");
+          setBroadcasted(false);
+        }, 2000);
+      }
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleRetrain = () => {
@@ -304,7 +321,13 @@ function AdminDashboard() {
                           </div>
                         ) : (
                           <div className="flex gap-2">
-                            <Button size="sm" className="bg-forest-500 hover:bg-forest-600 border-forest-600 text-ink-950" onClick={() => setInspectedReports(prev => ({ ...prev, [r.id]: "approved" }))}>Approve</Button>
+                            <Button size="sm" className="bg-forest-500 hover:bg-forest-600 border-forest-600 text-ink-950" onClick={async () => {
+                              await fetch(`http://127.0.0.1:8000/reports/${r.id}/verify`, {
+                                method: "POST",
+                                headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+                              });
+                              setInspectedReports(prev => ({ ...prev, [r.id]: "approved" }));
+                            }}>Approve</Button>
                             <Button size="sm" variant="ghost" className="border-2 border-red-500 text-red-600 hover:bg-red-50" onClick={() => setInspectedReports(prev => ({ ...prev, [r.id]: "rejected" }))}>Reject & Redo</Button>
                           </div>
                         )}
@@ -406,7 +429,7 @@ function AdminDashboard() {
             <div className="space-y-2 text-xs">
               <div className="flex justify-between border-b border-border/40 pb-1.5">
                 <span>Active DB connections</span>
-                <span className="font-mono font-semibold">14</span>
+                <span className="font-mono font-semibold">{health.db_connections || "—"}</span>
               </div>
               <div className="flex justify-between border-b border-border/40 pb-1.5">
                 <span>Database Disk Size</span>
@@ -426,12 +449,12 @@ function AdminDashboard() {
             </h3>
             <div className="grid grid-cols-2 gap-2 text-center text-xs">
               <div className="bg-sand-100 p-2 rounded">
-                <div className="font-bold text-lg">12</div>
-                <div className="text-[10px] text-muted-foreground">Citizens</div>
+                <div className="font-bold text-lg">{health.online_users !== undefined ? Math.max(1, health.online_users) : "—"}</div>
+                <div className="text-[10px] text-muted-foreground">Total Online Users</div>
               </div>
               <div className="bg-sand-100 p-2 rounded">
-                <div className="font-bold text-lg">3</div>
-                <div className="text-[10px] text-muted-foreground">Collectors</div>
+                <div className="font-bold text-lg">{health.uptime_hours || "—"}</div>
+                <div className="text-[10px] text-muted-foreground">Uptime Hours</div>
               </div>
             </div>
           </Card>
@@ -454,10 +477,15 @@ function AdminDashboard() {
               <Terminal className="w-4 h-4 text-emerald-500" /> System Audit Logs
             </h3>
             <div className="space-y-1.5 max-h-[120px] overflow-y-auto pr-1">
-              <div>[12:02:14] DB connection pool spawned.</div>
-              <div>[12:02:20] WebSocket broadcasting connected.</div>
-              <div>[12:03:01] Token check succeeded for #6.</div>
-              <div>[12:05:44] Report resolved. Dispatched updates.</div>
+              {auditLogs.length === 0 ? (
+                <div>No recent system logs.</div>
+              ) : (
+                auditLogs.map((log) => (
+                  <div key={log.id}>
+                    [{new Date(log.timestamp).toLocaleTimeString()}] {log.admin_name} - {log.action}: {log.details}
+                  </div>
+                ))
+              )}
             </div>
           </Card>
         </div>

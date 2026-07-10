@@ -96,6 +96,23 @@ def list_reports(
         total_pages=total_pages
     )
 
+@router.get("/community")
+def list_community_reports(
+    limit: int = Query(5, ge=1, le=20),
+    db: Session = Depends(database.get_db)
+):
+    """Get recent publicly resolved reports for the community feed"""
+    return crud.get_community_reports(db, limit=limit)
+
+@router.get("/leaderboard")
+def get_leaderboard(
+    limit: int = Query(3, ge=1, le=10),
+    db: Session = Depends(database.get_db)
+):
+    """Get top citizens by resolved report count"""
+    leaders = crud.get_citizen_leaderboard(db, limit=limit)
+    return [{"name": name, "resolved_count": count} for name, count in leaders]
+
 @router.put("/{report_id}", response_model=schemas.ReportOut)
 async def update_report(
     report_id: int,
@@ -136,3 +153,64 @@ async def update_report(
     }))
     
     return updated
+
+@router.get("/collector/leaderboard")
+async def get_collector_leaderboard(
+    limit: int = 5,
+    db: Session = Depends(database.get_db)
+):
+    """Get top collectors by resolved report count for the day"""
+    return crud.get_collector_leaderboard(db, limit=limit)
+
+@router.post("/{report_id}/reassign")
+async def reassign_report(
+    report_id: int,
+    db: Session = Depends(database.get_db),
+    current_user: schemas.UserOut = Depends(auth.get_current_user)
+):
+    """Unassign a report from the current collector"""
+    if current_user.role != "collector" and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
+        
+    report = crud.get_report(db, report_id)
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+        
+    if current_user.role == "collector" and report.assigned_worker_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not assigned to this report")
+
+    # Unassign it and reset to pending
+    report.assigned_worker_id = None
+    report.assigned_worker_name = None
+    report.status = models.ReportStatus.pending
+    db.commit()
+    db.refresh(report)
+
+    await manager.broadcast(json.dumps({
+        "event": "report:reassigned",
+        "id": report.id,
+        "status": report.status,
+        "address": report.address
+    }))
+
+    return report
+
+@router.post("/{report_id}/verify")
+async def verify_report(
+    report_id: int,
+    db: Session = Depends(database.get_db),
+    current_user: schemas.UserOut = Depends(auth.get_current_user)
+):
+    """Admin quality inspector: verify and approve a resolved report"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
+        
+    report = crud.get_report(db, report_id)
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+        
+    if report.status != models.ReportStatus.resolved:
+        raise HTTPException(status_code=400, detail="Only resolved reports can be verified")
+
+    crud.log_admin_action(db, current_user.id, current_user.display_name, "Verify Report", f"Approved report {report_id}")
+    return {"status": "ok", "verified": True}

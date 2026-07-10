@@ -8,7 +8,7 @@ import { TextareaField } from "@/components/portal/TextareaField";
 import { Button } from "@/components/portal/Button";
 import { Card } from "@/components/portal/Card";
 import { apiFetch } from "@/lib/api";
-import { hasErrors, validateFields, validators } from "@/utils/helpers";
+import { hasErrors, validateFields, validators, classNames } from "@/utils/helpers";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -129,41 +129,92 @@ function NewReport() {
     }
   };
 
-  const detect = () => {
-    if (!navigator.geolocation) return;
+  const updateMapLocation = (lat: number, lon: number) => {
+    setValues((v) => ({
+      ...v,
+      latitude: String(lat),
+      longitude: String(lon),
+    }));
+    if (leafletMap.current) {
+      leafletMap.current.setView([lat, lon], 16);
+      if (markerRef.current) {
+        markerRef.current.setLatLng([lat, lon]);
+      }
+    }
+  };
+
+  const detect = async () => {
     setGeoLoading(true);
+    
+    // IP-based fallback function
+    const fetchIpLocation = async () => {
+      try {
+        const res = await fetch("https://ipapi.co/json/");
+        const data = await res.json();
+        if (data && data.latitude && data.longitude) {
+          updateMapLocation(data.latitude, data.longitude);
+        }
+      } catch (err) {
+        console.error("IP geolocation failed", err);
+      } finally {
+        setGeoLoading(false);
+      }
+    };
+
+    if (!navigator.geolocation) {
+      await fetchIpLocation();
+      return;
+    }
+
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        const { latitude, longitude } = pos.coords;
-        setValues((v) => ({
-          ...v,
-          latitude: String(latitude),
-          longitude: String(longitude),
-        }));
-        if (leafletMap.current) {
-          leafletMap.current.setView([latitude, longitude], 16);
-          if (markerRef.current) {
-            markerRef.current.setLatLng([latitude, longitude]);
-          }
-        }
+        updateMapLocation(pos.coords.latitude, pos.coords.longitude);
         setGeoLoading(false);
       },
-      () => setGeoLoading(false),
+      (error) => {
+        console.warn("Native geolocation failed or blocked, falling back to IP geolocation", error);
+        fetchIpLocation();
+      },
       { timeout: 5000 }
     );
   };
 
-  // Mock speech dictation
+  // Web Speech API dictation
   const triggerDictation = () => {
     if (dictating) return;
-    setDictating(true);
-    setTimeout(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Voice dictation is not supported in this browser.");
+      return;
+    }
+    
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = "en-US";
+
+    recognition.onstart = () => {
+      setDictating(true);
+    };
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
       setValues((v) => ({
         ...v,
-        description: v.description + (v.description ? " " : "") + "[Large pile of trash blockaded on the pedestrian footpath]"
+        description: v.description + (v.description ? " " : "") + transcript
       }));
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error("Speech recognition error", event.error);
       setDictating(false);
-    }, 2000);
+    };
+
+    recognition.onend = () => {
+      setDictating(false);
+    };
+
+    recognition.start();
   };
 
   // Setup Leaflet map
@@ -361,10 +412,7 @@ function NewReport() {
             <button
               type="button"
               onClick={triggerDictation}
-              className={classNames(
-                "absolute right-3 bottom-3 p-1.5 rounded-full border text-xs flex items-center gap-1 transition-all",
-                dictating ? "bg-red-500 text-white border-red-500 animate-pulse" : "bg-card text-muted-foreground border-border hover:text-foreground"
-              )}
+              className={`absolute right-3 bottom-3 p-1.5 rounded-full border text-xs flex items-center gap-1 transition-all ${dictating ? "bg-red-500 text-white border-red-500 animate-pulse" : "bg-card text-muted-foreground border-border hover:text-foreground"}`}
               title="Dictate with voice"
             >
               <Mic className="w-3.5 h-3.5" />
@@ -402,10 +450,7 @@ function NewReport() {
             <button
               type="button"
               onClick={() => setShowRecycleHubs(!showRecycleHubs)}
-              className={classNames(
-                "absolute top-3 right-3 p-2 rounded-lg border-2 border-ink-950 font-display font-semibold text-xs flex items-center gap-1.5 shadow-[2px_2px_0_0_#0a0f0a] z-[1000]",
-                showRecycleHubs ? "bg-forest-500 text-ink-950" : "bg-card text-muted-foreground"
-              )}
+              className={`absolute top-3 right-3 p-2 rounded-lg border-2 border-ink-950 font-display font-semibold text-xs flex items-center gap-1.5 shadow-[2px_2px_0_0_#0a0f0a] z-[1000] ${showRecycleHubs ? "bg-forest-500 text-ink-950" : "bg-card text-muted-foreground"}`}
             >
               <Recycle className="w-4 h-4" />
               {showRecycleHubs ? "Recycle Hubs Active" : "Show Recycle Hubs"}
@@ -466,7 +511,7 @@ function NewReport() {
                       className="w-full p-3 text-left bg-sand-50/50 hover:bg-sand-100/50 flex justify-between items-center text-xs font-semibold"
                     >
                       <span>{faq.q}</span>
-                      <ChevronDown className={classNames("w-3.5 h-3.5 text-muted-foreground transition-transform", isOpen ? "rotate-185" : "")} />
+                      <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`} />
                     </button>
                     {isOpen && (
                       <div className="p-3 text-xs text-muted-foreground leading-relaxed border-t border-border/60 bg-card">

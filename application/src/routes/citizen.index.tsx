@@ -45,10 +45,50 @@ function CitizenDashboard() {
   // State for mobile portal optimizations
   const [guideSearch, setGuideSearch] = useState("");
   const [tipIndex, setTipIndex] = useState(0);
-  const [darkMode, setDarkMode] = useState(false);
-  const [pushDismissed, setPushDismissed] = useState(false);
-  const [avatar, setAvatar] = useState("avatar-1");
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem("clean_city_dark_mode") === "true");
+  const [pushDismissed, setPushDismissed] = useState(() => localStorage.getItem("clean_city_push_dismissed") === "true");
+  const [avatar, setAvatar] = useState(() => localStorage.getItem("clean_city_avatar") || "avatar-1");
   const [showBeforeAfter, setShowBeforeAfter] = useState<number | string | null>(null);
+
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+    localStorage.setItem("clean_city_dark_mode", String(darkMode));
+  }, [darkMode]);
+
+  const toggleDarkMode = () => setDarkMode(!darkMode);
+
+  const handlePushEnable = () => {
+    if ("Notification" in window) {
+      Notification.requestPermission().then(() => {
+        setPushDismissed(true);
+        localStorage.setItem("clean_city_push_dismissed", "true");
+      });
+    } else {
+      setPushDismissed(true);
+      localStorage.setItem("clean_city_push_dismissed", "true");
+    }
+  };
+
+  const handlePushDismiss = () => {
+    setPushDismissed(true);
+    localStorage.setItem("clean_city_push_dismissed", "true");
+  };
+
+  const toggleAvatar = () => {
+    const next = avatar === "avatar-1" ? "avatar-2" : "avatar-1";
+    setAvatar(next);
+    localStorage.setItem("clean_city_avatar", next);
+  };
+
+  // Fetch community and leaderboard
+  const communityData = useApi<any>("/reports/community", {}, []);
+  const leaderboardData = useApi<any>("/reports/leaderboard", {}, []);
+  const communityReports = Array.isArray(communityData.data) ? communityData.data : [];
+  const leaderboard = Array.isArray(leaderboardData.data) ? leaderboardData.data : [];
 
   // Waste category guide database
   const guideResults = (() => {
@@ -78,10 +118,6 @@ function CitizenDashboard() {
     return () => clearInterval(interval);
   }, []);
 
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
-    document.documentElement.classList.toggle("dark");
-  };
 
   return (
     <>
@@ -98,8 +134,8 @@ function CitizenDashboard() {
             </div>
           </div>
           <div className="flex gap-2 w-full md:w-auto">
-            <Button size="sm" onClick={() => setPushDismissed(true)} className="flex-1 md:flex-none">Enable</Button>
-            <Button size="sm" variant="ghost" onClick={() => setPushDismissed(true)} className="flex-1 md:flex-none">Dismiss</Button>
+            <Button size="sm" onClick={handlePushEnable} className="flex-1 md:flex-none">Enable</Button>
+            <Button size="sm" variant="ghost" onClick={handlePushDismiss} className="flex-1 md:flex-none">Dismiss</Button>
           </div>
         </div>
       )}
@@ -203,14 +239,12 @@ function CitizenDashboard() {
           <Card className="p-5">
             <h3 className="font-display font-semibold mb-3">Neighborhood Cleared Zones</h3>
             <div className="space-y-3">
-              {[
-                { id: "act-1", title: "Litter sweep resolved near Park Lane", address: "Park Lane Circle", date: "Today", before: "https://images.unsplash.com/photo-1611284446314-60a58ac0deb9?auto=format&fit=crop&w=300&h=200&q=80", after: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=300&h=200&q=80" },
-                { id: "act-2", title: "Organic waste container cleared in Ward 4", address: "Block B-12", date: "Yesterday", before: "https://images.unsplash.com/photo-1530587191325-3db32d826c18?auto=format&fit=crop&w=300&h=200&q=80", after: "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?auto=format&fit=crop&w=300&h=200&q=80" }
-              ].map((act) => (
+              {communityReports.length === 0 && <div className="text-sm text-muted-foreground">No recent community activity.</div>}
+              {communityReports.map((act: any) => (
                 <div key={act.id} className="border border-border rounded-xl p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 hover:bg-sand-50/50 transition-colors">
                   <div>
-                    <div className="text-xs font-semibold text-ink-950">{act.title}</div>
-                    <div className="text-[11px] text-muted-foreground mt-0.5">{act.address} · {act.date}</div>
+                    <div className="text-xs font-semibold text-ink-950">{act.category || "Report"} resolved by {act.assigned_worker_name || "Crew"}</div>
+                    <div className="text-[11px] text-muted-foreground mt-0.5">{act.address || act.block || "Unknown"} · {formatDate(act.completed_at || act.updated_at)}</div>
                   </div>
                   <Button size="sm" variant="secondary" onClick={() => setShowBeforeAfter(showBeforeAfter === act.id ? null : act.id)}>
                     {showBeforeAfter === act.id ? "Close Preview" : "Before / After"}
@@ -218,11 +252,15 @@ function CitizenDashboard() {
                   {showBeforeAfter === act.id && (
                     <div className="w-full grid grid-cols-2 gap-2 mt-3 animate-fade-up">
                       <div className="relative">
-                        <img src={act.before} className="w-full h-24 object-cover rounded-lg border border-border" alt="Before" />
+                        <img src={act.photo_url} className="w-full h-24 object-cover rounded-lg border border-border" alt="Before" />
                         <span className="absolute bottom-1 left-1 bg-red-600 text-white text-[9px] font-mono px-1 rounded">Before</span>
                       </div>
                       <div className="relative">
-                        <img src={act.after} className="w-full h-24 object-cover rounded-lg border border-border" alt="After" />
+                        {act.completion_photo_url ? (
+                          <img src={act.completion_photo_url} className="w-full h-24 object-cover rounded-lg border border-border" alt="After" />
+                        ) : (
+                          <div className="w-full h-24 bg-forest-100 flex items-center justify-center text-xs text-forest-700 font-medium rounded-lg">Verified Clean</div>
+                        )}
                         <span className="absolute bottom-1 left-1 bg-forest-600 text-white text-[9px] font-mono px-1 rounded">After</span>
                       </div>
                     </div>
@@ -237,7 +275,7 @@ function CitizenDashboard() {
         <div className="space-y-6">
           {/* 7. Profile Impact Badges & 8. Custom Profile Avatars */}
           <Card className="p-5 text-center flex flex-col items-center">
-            <div className="relative group cursor-pointer" onClick={() => setAvatar(avatar === "avatar-1" ? "avatar-2" : "avatar-1")}>
+            <div className="relative group cursor-pointer" onClick={toggleAvatar}>
               <div className="w-16 h-16 rounded-full bg-forest-100 border-2 border-forest-500 grid place-items-center shadow-md overflow-hidden hover:scale-105 transition-transform">
                 {avatar === "avatar-1" ? (
                   <User className="w-8 h-8 text-forest-700" />
@@ -253,12 +291,19 @@ function CitizenDashboard() {
             <div className="w-full border-t border-border mt-4 pt-4">
               <div className="text-xs font-mono uppercase tracking-wider text-muted-foreground text-left mb-2">Impact Badges</div>
               <div className="flex gap-2 flex-wrap">
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-forest-100 text-forest-700 border border-forest-200">
-                  <ShieldCheck className="w-3.5 h-3.5" /> Eco-Warrior
-                </span>
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-50 text-yellow-700 border border-yellow-200">
-                  <Award className="w-3.5 h-3.5" /> Waste Patrol
-                </span>
+                {resolvedCount >= 5 && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-forest-100 text-forest-700 border border-forest-200">
+                    <ShieldCheck className="w-3.5 h-3.5" /> Eco-Warrior
+                  </span>
+                )}
+                {resolvedCount >= 1 && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-50 text-yellow-700 border border-yellow-200">
+                    <Award className="w-3.5 h-3.5" /> Waste Patrol
+                  </span>
+                )}
+                {resolvedCount === 0 && (
+                  <span className="text-xs text-muted-foreground italic">Submit a report to earn badges!</span>
+                )}
               </div>
             </div>
           </Card>
@@ -267,19 +312,23 @@ function CitizenDashboard() {
           <Card className="p-5">
             <h3 className="font-display font-semibold mb-3">Community Leaderboard</h3>
             <ul className="space-y-2.5">
-              {[
-                { rank: 1, name: "Marcus A.", points: "1,240 pts", current: false },
-                { rank: 2, name: "Sarah K.", points: "980 pts", current: false },
-                { rank: 3, name: "You (Citizen)", points: `${resolvedCount * 100} pts`, current: true }
-              ].map((usr, i) => (
-                <li key={i} className={`flex items-center justify-between text-xs p-2 rounded-lg ${usr.current ? 'bg-forest-50/50 border border-forest-300' : 'hover:bg-sand-50/50'}`}>
+              {leaderboard.length === 0 && <div className="text-sm text-muted-foreground">No leaderboard data.</div>}
+              {leaderboard.map((usr: any, i: number) => (
+                <li key={i} className="flex items-center justify-between text-xs p-2 rounded-lg hover:bg-sand-50/50">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-muted-foreground w-4">#{usr.rank}</span>
-                    <span className="font-medium">{usr.name}</span>
+                    <span className="font-mono text-muted-foreground w-4">#{i + 1}</span>
+                    <span className="font-medium">{usr.name || "Anonymous"}</span>
                   </div>
-                  <span className="font-mono text-muted-foreground font-semibold">{usr.points}</span>
+                  <span className="font-mono text-muted-foreground font-semibold">{usr.resolved_count * 100} pts</span>
                 </li>
               ))}
+              <li className="flex items-center justify-between text-xs p-2 rounded-lg bg-forest-50/50 border border-forest-300">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-muted-foreground w-4">-</span>
+                  <span className="font-medium">You (Citizen)</span>
+                </div>
+                <span className="font-mono text-muted-foreground font-semibold">{resolvedCount * 100} pts</span>
+              </li>
             </ul>
           </Card>
 

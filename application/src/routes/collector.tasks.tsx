@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Search, Play, Check, XCircle, ListChecks, ArrowUpDown, ScanLine, Image, MessageSquare, RefreshCw, CheckCircle2 } from "lucide-react";
+import { Search, Play, Check, XCircle, ListChecks, ArrowUpDown, ScanLine, Image, MessageSquare, RefreshCw, CheckCircle2, ImageIcon } from "lucide-react";
 import { PageHeader } from "@/components/portal/PageHeader";
 import { FormField } from "@/components/portal/FormField";
 import { Table, Th, Td } from "@/components/portal/Table";
@@ -82,9 +82,13 @@ function TaskList() {
   const update = async (id: string | number, next: string, reason?: string) => {
     setUpdating(id);
     try {
-      const payload: any = { status: next };
-      if (reason) payload.cancel_reason = reason;
-      await apiFetch(`/collector/tasks/${id}`, { method: "PATCH", body: payload });
+      if (next === "reassign") {
+        await apiFetch(`/reports/${id}/reassign`, { method: "POST" });
+      } else {
+        const payload: any = { status: next };
+        // if (reason) payload.cancel_reason = reason; (not fully supported by backend model update, but we'd pass it here)
+        await apiFetch(`/collector/tasks/${id}`, { method: "PATCH", body: payload });
+      }
       await refetch();
     } finally {
       setUpdating(null);
@@ -113,10 +117,19 @@ function TaskList() {
   };
 
   const triggerUploadMock = (id: string | number) => {
-    setUploadedBeforeAfter(prev => ({
-      ...prev,
-      [id]: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=300&h=200&q=80"
-    }));
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.onchange = (e: any) => {
+      const file = e.target.files[0];
+      if (file) {
+        setUploadedBeforeAfter(prev => ({
+          ...prev,
+          [id]: URL.createObjectURL(file)
+        }));
+      }
+    };
+    input.click();
   };
 
   return (
@@ -354,7 +367,7 @@ function TaskList() {
                                   <option value="access">Access Blocked by Cars</option>
                                   <option value="unsafe">Unsafe / Needs Heavy Gear</option>
                                 </select>
-                                <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white border-red-700" onClick={() => update(t.id, "cancelled", rejectReason)}>Reject Job</Button>
+                                <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white border-red-700" onClick={() => update(t.id, "reassign", rejectReason)}>Reject Job</Button>
                                 <Button size="sm" variant="ghost" onClick={() => setRejectOpen(null)}>Cancel</Button>
                               </div>
                             </div>

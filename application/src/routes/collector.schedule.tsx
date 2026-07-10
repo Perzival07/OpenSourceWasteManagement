@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/portal/Skeleton";
 import { EmptyState } from "@/components/portal/EmptyState";
 import { StatusBadge } from "@/components/portal/StatusBadge";
 import { useApi } from "@/hooks/useApi";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { classNames } from "@/utils/helpers";
 
 export const Route = createFileRoute("/collector/schedule")({
@@ -26,6 +26,13 @@ interface Task {
   priority?: string;
 }
 
+interface Announcement {
+  id: number;
+  message: string;
+  created_by_name: string;
+  created_at: string;
+}
+
 function CollectorSchedule() {
   const { data, loading, error } = useApi<any>("/collector/tasks?limit=50", {}, []);
   const items: Task[] = Array.isArray(data) ? data : data?.items ?? [];
@@ -33,15 +40,39 @@ function CollectorSchedule() {
     ["assigned", "in_progress"].includes((t.status || "").toLowerCase())
   );
 
+  const { data: announcementsData } = useApi<Announcement[]>("/announcements", {}, []);
+  const announcements = announcementsData || [];
+
   // Production Features States
-  const [vehicleNo, setVehicleNo] = useState("TRUCK-04");
-  const [fuelLevel, setFuelLevel] = useState(80);
-  const [odometer, setOdometer] = useState("12,450");
-  const [safetyVerified, setSafetyVerified] = useState(false);
+  const [vehicleNo, setVehicleNo] = useState(() => localStorage.getItem("vehicleNo") || "TRUCK-04");
+  const [fuelLevel, setFuelLevel] = useState(() => {
+    const saved = localStorage.getItem("fuelLevel");
+    return saved ? Number(saved) : 80;
+  });
+  const [odometer, setOdometer] = useState(() => localStorage.getItem("odometer") || "12,450");
+  const [safetyVerified, setSafetyVerified] = useState(() => localStorage.getItem("vehicleSafety") === "true");
   const [offlineMapCached, setOfflineMapCached] = useState(true);
 
+  useEffect(() => {
+    localStorage.setItem("vehicleNo", vehicleNo);
+    localStorage.setItem("fuelLevel", String(fuelLevel));
+    localStorage.setItem("odometer", odometer);
+    localStorage.setItem("vehicleSafety", String(safetyVerified));
+  }, [vehicleNo, fuelLevel, odometer, safetyVerified]);
+
   // Check off stops locally for progress tracking
-  const [completedStops, setCompletedStops] = useState<Record<string | number, boolean>>({});
+  const [completedStops, setCompletedStops] = useState<Record<string | number, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem("completedStops");
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem("completedStops", JSON.stringify(completedStops));
+  }, [completedStops]);
 
   // Estimates calculations
   const totalStops = stops.length;
@@ -213,12 +244,15 @@ function CollectorSchedule() {
               <MessageSquare className="w-4 h-4 text-forest-600" /> Dispatch Radio Chat
             </h3>
             <div className="space-y-2 text-[11px] leading-relaxed max-h-[160px] overflow-y-auto pr-1">
-              <div className="bg-sand-100 p-2 rounded-lg border border-border">
-                <span className="font-bold text-forest-800">Dispatch:</span> All vehicles check in before starting secondary routes.
-              </div>
-              <div className="bg-sand-100 p-2 rounded-lg border border-border">
-                <span className="font-bold text-forest-800">Supervisor:</span> Great work Ward 4 crews, clearance rate is at 92%! Keep it up.
-              </div>
+              {announcements.length === 0 ? (
+                <div className="text-muted-foreground">No messages on the radio...</div>
+              ) : (
+                announcements.map((ann: Announcement) => (
+                  <div key={ann.id} className="bg-sand-100 p-2 rounded-lg border border-border">
+                    <span className="font-bold text-forest-800">{ann.created_by_name}:</span> {ann.message}
+                  </div>
+                ))
+              )}
             </div>
           </Card>
         </div>
