@@ -4,6 +4,7 @@ import { BarChart3, CheckCircle2, Clock, TrendingUp, Download, PieChart, Trendin
 import { PageHeader } from "@/components/portal/PageHeader";
 import { StatCard } from "@/components/portal/StatCard";
 import { Card } from "@/components/portal/Card";
+import { Button } from "@/components/portal/Button";
 import { Skeleton } from "@/components/portal/Skeleton";
 import { EmptyState } from "@/components/portal/EmptyState";
 import { useApi } from "@/hooks/useApi";

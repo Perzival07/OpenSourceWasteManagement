@@ -306,7 +306,7 @@ function NewReport() {
       latitude: [validators.required],
       longitude: [validators.required],
     };
-    const errs = validateFields(values, rules);
+    const errs = validateFields(rules, values);
     if (hasErrors(errs)) {
       setErrors(errs);
       return;

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#10b981"/>
+  <!-- Buildings -->
+  <path d="M144 384 V 224 H 224 V 128 H 320 V 272 H 368 V 384 Z" fill="#ffffff"/>
+  <!-- Windows -->
+  <rect x="168" y="256" width="24" height="24" fill="#10b981"/>
+  <rect x="168" y="304" width="24" height="24" fill="#10b981"/>
+  <rect x="248" y="160" width="24" height="24" fill="#10b981"/>
+  <rect x="248" y="208" width="24" height="24" fill="#10b981"/>
+  <rect x="248" y="256" width="24" height="24" fill="#10b981"/>
+  <rect x="248" y="304" width="24" height="24" fill="#10b981"/>
+  <!-- Leaf -->
+  <path d="M 320 272 C 320 180 432 180 432 180 C 432 180 432 292 340 292 C 320 292 320 272 320 272 Z" fill="#a7f3d0" />
+</svg>

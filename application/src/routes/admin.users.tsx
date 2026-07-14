@@ -400,13 +400,13 @@ function CreateUserModal({ open, onClose, onCreated }: { open: boolean; onClose:
 
   const submit = async () => {
     const es = validateFields(
-      values,
       {
         full_name: [validators.required],
         email: [validators.required, validators.email],
         password: [validators.required, validators.password],
         phone: [validators.phone],
-      }
+      },
+      values
     );
     setErrors(es);
     if (hasErrors(es)) return;
